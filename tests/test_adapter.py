@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 from types import ModuleType, SimpleNamespace
 import unittest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 ROOT=Path(__file__).parents[1]
@@ -122,6 +122,17 @@ class AdapterTests(unittest.IsolatedAsyncioTestCase):
     async def test_invalid_photo_does_not_write(self):
         with self.assertRaises(ValueError):await self.manager.mutate(PAUL,0,'add',payload('worked',photo='bad'))
         self.assertEqual(Store.records,{})
+    async def test_pinned_ui_modules_are_served_with_the_card(self):
+        self.hass.http=SimpleNamespace(async_register_static_paths=AsyncMock())
+        with patch.object(gm.frontend,'add_extra_js_url') as register:
+            self.assertTrue(await gm.async_setup(self.hass,{}))
+        paths=self.hass.http.async_register_static_paths.call_args.args[0]
+        self.assertEqual(paths[0][0],'/gartenarbeit-manager')
+        frontend=Path(paths[0][1])
+        self.assertTrue((frontend/'card.js').is_file())
+        self.assertTrue((frontend/'family-ui/1.0.0/family-ui.js').is_file())
+        self.assertTrue((frontend/'family-ui/1.0.0/LICENSE').is_file())
+        register.assert_called_once_with(self.hass,'/gartenarbeit-manager/card.js?v='+gm.VERSION)
     async def test_write_target_must_be_the_actual_affected_account(self):
         p=payload('worked')
         self.assertEqual(self.manager.mutation_target(PAUL,'add',p,ACCOUNT_IDS['Paul']),ACCOUNT_IDS['Paul'])

@@ -2,7 +2,7 @@
 
 # Gartenarbeit Manager
 
-Lokales Gartenzeitkonto für Home Assistant. Übernimmt die Gartenarbeitslogik der Haushalts-Site: Kinder melden ihre Arbeit, Vera und Manuel prüfen die Minuten und geben sie frei. Die kompakte, responsive Dashboard-Karte orientiert sich am Shutter Manager und verwendet das aktive HA-Design, einschließlich Dunkelmodus.
+Lokales Gartenzeitkonto für Home Assistant. Übernimmt die Gartenarbeitslogik der Haushalts-Site: Kinder melden ihre Arbeit, Vera und Manuel prüfen die Minuten und geben sie frei. Die responsive Dashboard-Karte verwendet vollständig den gemeinsamen HA UI Kit 1.0.0 auf Basis des Shutter Managers. Symbole, Farben, Schrift, Abstände, Navigation, Einstellungszeilen, Eingaben und Dialoge kommen aus dessen lokal gebundenen Komponenten und respektieren das aktive HA-Theme einschließlich Dunkelmodus.
 
 ## Installation über Marketplace
 
@@ -21,7 +21,7 @@ title: Gartenarbeit
 
 Die Kartenressource wird automatisch registriert. Falls der Browser die Karte nach der Erstinstallation noch nicht kennt, die HA-App bzw. den Browser einmal vollständig neu laden.
 
-**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.0.3.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
+**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.1.0.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
 
 ## Kontoregeln
 
@@ -63,7 +63,7 @@ Nach dem Update HA neu starten, dann in der jeweiligen Rolle unter **Advanced �
 gartenarbeit_manager/*
 ```
 
-Zusätzlich eine Entitätsregel mit **Read and control** (Lesen und Bedienen) anlegen:
+Für die Kontoentitäten **Read and control** (Lesen und Bedienen) erlauben. Die Zuordnung zu einem bereits entsprechend freigegebenen **Label genügt**; separate Einzelregeln sind dann nicht erforderlich. Alternativ folgende Entitätsregeln verwenden:
 
 | Rolle | Freizugebende Kontoentität |
 | --- | --- |
@@ -102,6 +102,12 @@ Gleichzeitige Änderungen werden über Revisionen und eine serverseitige Sperre 
 
 Die **Logik** wird übernommen. Vorhandene Site-Buchungen und Fotos werden nicht automatisch nach Home Assistant übertragen; die Integration startet mit einem leeren Zeitkonto. Die bisherige Site und ihre Daten werden durch die Installation nicht geändert.
 
+## Gemeinsamer HA UI Kit
+
+Gartenarbeit Manager 1.1.0 bindet [HA UI Kit 1.0.0](https://github.com/v9h45n47mh-lab/ha-ui-kit/tree/978160baafd2d26db8dbfb869c5822eedccdb661) fest unter `frontend/family-ui/1.0.0/` ein. Die Lock-Datei enthält die Prüfsummen; JavaScript, CSS, Manifest und Lizenz werden mit jeder Installation ausgeliefert. Die HA-Route liefert den gesamten Frontendordner für die relativen Modulimporte aus. Es gibt keinen automatischen Bezug von main/latest und keinen externen Laufzeitaufruf.
+
+Unter dem Zahnrad zeigt die Versionszeile Oberfläche, Integration und UI-Version. Nach dem Update HA neu starten und die Oberfläche vollständig neu laden: Erwartet werden **Oberfläche 1.1.0**, **Integration 1.1.0** und **UI 1.0.0**. Die technische Zuordnung und das Prüfverfahren stehen in [UI_KIT.md](UI_KIT.md).
+
 ## Marketplace-Logo
 
 Das Blatt mit Zeituhr liegt als transparentes PNG in 256 und 512 Pixeln einschließlich Dark-Varianten sowohl unter `brand/` als auch unter `custom_components/gartenarbeit_manager/brand/`. Damit sind die Branding-Dateien für HA und Marketplace enthalten. Das Hinzufügen als benutzerdefiniertes Repository ist möglich; eine Aufnahme in den allgemeinen Marketplace-Katalog ist ein separater Vorgang.
@@ -112,7 +118,9 @@ Das Blatt mit Zeituhr liegt als transparentes PNG in 256 und 512 Pixeln einschli
 python -m unittest discover -s tests -v
 npm install --ignore-scripts
 npm test
-node --check custom_components/gartenarbeit_manager/frontend/card.js
+node --input-type=module --check < custom_components/gartenarbeit_manager/frontend/card.js
+npx playwright install --with-deps chromium
+npm run test:browser
 python scripts/build_release.py
 ```
 

@@ -19,7 +19,15 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - run: npm install --ignore-scripts
       - run: npm test
-      - run: node --check custom_components/gartenarbeit_manager/frontend/card.js
+      - run: node --input-type=module --check < custom_components/gartenarbeit_manager/frontend/card.js
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gartenarbeit-ui-desktop-mobile
+          path: test-results/
+          retention-days: 14
       - run: python scripts/build_release.py
   hacs:
     runs-on: ubuntu-latest
@@ -53,7 +61,7 @@ jobs:
           import json, os
           version=json.loads(Path('custom_components/gartenarbeit_manager/manifest.json').read_text())['version']
           notes=Path('CHANGELOG.md').read_text().split('## '+version+'\n',1)[1].split('\n## ',1)[0].strip()
-          Path('release-notes.md').write_text(notes+'\n\nGeprüft: Kontologik, Rechte, Speicherfehler, Karten-DOM, Hassfest und Marketplace/HACS. Ein Live-Installationstest auf HA steht noch aus.\n')
+          Path('release-notes.md').write_text(notes+'\n\nGeprüft: Kontologik, Rechte, Speicherfehler, echte UI-Module, Desktop/Mobil (1100/430/390/375/320 px), helle/dunkle Themes, Buchungen und Fotos im Browser, Hassfest und Marketplace/HACS. HA-Laufzeit und Speicher sind in den Funktions-/Browserprüfungen simuliert; ein Installationstest in der eigenen HA-Instanz steht noch aus.\n')
           with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('version='+version+'\ntag=v'+version+'\n')
           PY
       - name: Publish release

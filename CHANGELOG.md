@@ -1,5 +1,14 @@
 # Änderungen
 
+## 1.1.0
+
+- Gesamte Oberfläche auf den gemeinsamen HA UI Kit 1.0.0 umgestellt: Navigation, Original-SVGs, Farben, Schrift, Abstände, Zeitkonto- und Buchungszeilen, Einstellungen, Filter, Eingaben und Dialoge.
+- Einheitliches Shutter-Manager-Zahnrad mit neutralem und ausgewähltem Zustand; Versionsanzeige für Oberfläche, Integration und UI Kit.
+- Feste lokale Modulversion mit Prüfsummen und Lizenz; vollständige Frontend-Auslieferung einschließlich aller Unterverzeichnisse und Kontrolle des Release-Inhalts.
+- Buchungslogik, freie Korrekturen, Freigaben, Fotos, Änderungsverlauf und die serverseitigen Familien- und Entitätsberechtigungen beibehalten.
+- Bestehende Label-Freigaben der Konto-Sensoren werden weiter verwendet; die Anleitung dokumentiert diese bestätigte Variante.
+- Browserprüfung für Desktop und Mobilgeräte (1100/430/390/375/320 px), helle und dunkle Themes, echte Formularübermittlung, Fotos, Eingabenerhalt, Tastatur und Fokus. Die Veröffentlichung wartet auf diese Prüfungen sowie Hassfest und Marketplace/HACS.
+
 ## 1.0.3
 
 - Access-Control-Kompatibilität: Jede Buchung, Bearbeitung und Freigabe benennt die tatsächlich betroffene Kontoentität als `entity_id`.

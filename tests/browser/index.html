@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gartenarbeit · HA UI Kit Vorschau</title>
+<style>
+body{margin:0;background:#f4f5f6;color:#212121;font-family:Roboto,Arial,sans-serif}
+body.dark{background:#111;color:#e1e1e1;--primary-text-color:#e1e1e1;--secondary-text-color:#b0b0b0;--card-background-color:#1c1c1c;--divider-color:#3b3b3b;--secondary-background-color:#242424;--input-fill-color:#242424;--primary-color:#03a9f4;--text-primary-color:#fff}
+.preview-shell{max-width:760px;margin:16px auto;padding:0 12px}
+.preview-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:13px}
+.preview-controls select,.preview-controls button{font:inherit;padding:6px}
+</style>
+<div class="preview-shell">
+  <div class="preview-controls"><span>Vorschau</span><select id="person" aria-label="Demo-Benutzer"><option value="v">Vera</option><option value="m">Manuel</option><option value="max">Maximilian</option><option value="p">Paul</option></select><button id="theme">Hell / Dunkel</button><button id="refresh-test">Daten prüfen</button></div>
+  <gartenarbeit-manager-card></gartenarbeit-manager-card>
+</div>
+<script type="module">
+import '/gartenarbeit-manager/card.js';
+const card=document.querySelector('gartenarbeit-manager-card');card.setConfig({title:'Gartenarbeit'});
+function login(){const user=document.querySelector('#person').value;card.hass={user:{id:user},callWS:async message=>{const response=await fetch('/rpc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user,message})});const result=await response.json();if(!response.ok)throw new Error(result.error);return result;}};}
+document.querySelector('#person').addEventListener('change',login);
+document.querySelector('#theme').addEventListener('click',()=>document.body.classList.toggle('dark'));
+document.querySelector('#refresh-test').addEventListener('click',()=>card.load());login();
+</script>
+</html>

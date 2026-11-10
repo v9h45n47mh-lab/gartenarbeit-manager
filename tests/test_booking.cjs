@@ -1,8 +1,8 @@
 // Exercise the real card's submit/mutate path against the Python HA adapter.
 // Only browser DOM and HA runtime/storage surfaces are simulated.
-const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const assert=require('node:assert/strict'),path=require('node:path');
 const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
-const {parseHTML}=require('linkedom'),{webcrypto}=require('node:crypto');
+const {parseHTML}=require('linkedom');
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 
 async function bookings(localHttp){
@@ -20,8 +20,7 @@ async function bookings(localHttp){
  window.HTMLElement.prototype.close=function(){this.removeAttribute('open');this.dispatchEvent(new window.Event('close'))};
  Object.defineProperty(window.HTMLElement.prototype,'open',{configurable:true,get(){return this.hasAttribute('open')}});
  Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return (this.querySelector('option[selected]')||this.querySelector('option'))?.value||''},set(v){this.querySelectorAll('option').forEach(o=>o.toggleAttribute('selected',o.value===String(v)))}});
- vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../custom_components/gartenarbeit_manager/frontend/card.js'),'utf8'),{window,document:window.document,HTMLElement:window.HTMLElement,customElements:window.customElements,Intl,Date,JSON,Number,String,Set,setInterval,clearInterval,crypto:localHttp?{getRandomValues:bytes=>webcrypto.getRandomValues(bytes)}:webcrypto,URL,Image:window.Image});
- const Card=window.customElements.get('gartenarbeit-manager-card');
+ const Card=await require('./card_runtime.cjs').loadCard(window,{localHttp});
  async function create(user){const card=new Card();card.setConfig({});window.document.body.append(card);cards.push(card);card._user=user;card._hass={callWS:message=>send(user,message)};await card.load();assert.ok(card._data);return card;}
  function field(card,name,value){const input=card.shadowRoot.querySelector(`[name="${name}"]`);assert.ok(input,name);input.value=String(value);}
  async function submit(card){const form=card.shadowRoot.querySelector('dialog form');assert.equal(typeof form.onsubmit,'function','The form must have a save handler');form.onsubmit({preventDefault(){}});while(card._busy)await new Promise(resolve=>setImmediate(resolve));}

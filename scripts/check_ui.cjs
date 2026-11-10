@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{createHash}=require('node:crypto');
+const root=path.resolve(__dirname,'../custom_components/gartenarbeit_manager/frontend');
+const lock=JSON.parse(fs.readFileSync(path.join(root,'family-ui.lock.json')));
+assert.equal(lock.version,'1.0.0');
+assert.equal(lock.module,'./family-ui/1.0.0/family-ui.js');
+const hash=file=>createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+for(const [name,sha] of Object.entries(lock.files))assert.equal(hash(path.join(root,'family-ui',lock.version,name)),sha,name);
+assert.equal(hash(path.join(root,'family-ui',lock.version,'LICENSE')),lock.licenseSha256);
+const source=fs.readFileSync(path.join(root,'card.js'),'utf8');
+assert.ok(source.includes(`from '${lock.module}'`));
+assert.ok(source.includes('${UI_CSS}'));
+assert.ok(source.includes('bindUI(this.shadowRoot'));
+assert.ok(!source.includes('ha-icon')&&!source.includes('mdi:'),'All action symbols come from HA UI Kit');
+console.log(`Verified pinned HA UI Kit ${lock.version}, module import, CSS, icons and licence.`);

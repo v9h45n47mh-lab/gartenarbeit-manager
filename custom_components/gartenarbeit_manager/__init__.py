@@ -28,7 +28,7 @@ PLATFORMS = [Platform.SENSOR]
 
 async def async_setup(hass, config):
     await hass.http.async_register_static_paths([StaticPathConfig(
-        "/gartenarbeit-manager/card.js", str(Path(__file__).parent / "frontend" / "card.js"), False)])
+        "/gartenarbeit-manager", str(Path(__file__).parent / "frontend"), False)])
     frontend.add_extra_js_url(hass, "/gartenarbeit-manager/card.js?v=" + VERSION)
     for command in (ws_get, ws_add, ws_update, ws_approve, ws_photo):
         websocket_api.async_register_command(hass, command)

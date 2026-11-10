@@ -2,9 +2,11 @@
   "name": "gartenarbeit-manager-tests",
   "private": true,
   "scripts": {
-    "test": "node tests/test_card.cjs && node tests/test_card.cjs --local-http && node tests/test_booking.cjs"
+    "test": "node scripts/check_ui.cjs && node --experimental-vm-modules tests/test_card.cjs && node --experimental-vm-modules tests/test_card.cjs --local-http && node --experimental-vm-modules tests/test_booking.cjs",
+    "test:browser": "node tests/browser.cjs"
   },
   "devDependencies": {
-    "linkedom": "0.18.12"
+    "linkedom": "0.18.12",
+    "playwright": "1.62.1"
   }
 }
