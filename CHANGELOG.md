@@ -1,5 +1,12 @@
 # Änderungen
 
+## 1.0.2
+
+- Buchungsformulare bei lokalem HTTP-Zugriff repariert: Die bisher verwendete Browserfunktion `crypto.randomUUID()` steht dort nicht zur Verfügung und hat das Einrichten der Speicherfunktion unterbrochen.
+- Buchungskennungen werden jetzt als UUID v4 mit `crypto.getRandomValues()` erzeugt; das funktioniert lokal über HTTP und über HTTPS/Cloud.
+- Arbeitsmeldungen der Kinder, Zuweisungen und freie Elternkorrekturen können dadurch auch beim lokalen Zugriff gespeichert werden.
+- Regressionstests prüfen beide Browserumgebungen sowie den gesamten Weg von der Karte über die WebSocket-Verarbeitung bis zum simulierten HA-Speicher, einschließlich Freigaben und erneutem Senden nach verlorener Antwort.
+
 ## 1.0.1
 
 - Einstellungssymbol wie bei der Spülmaschine: ausgefülltes Zahnrad mit markiertem Aktivzustand, auch in der Einstellungsansicht.

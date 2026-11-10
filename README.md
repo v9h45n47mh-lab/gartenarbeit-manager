@@ -21,7 +21,7 @@ title: Gartenarbeit
 
 Die Kartenressource wird automatisch registriert. Falls der Browser die Karte nach der Erstinstallation noch nicht kennt, die HA-App bzw. den Browser einmal vollständig neu laden.
 
-**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.0.1.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
+**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.0.2.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
 
 ## Kontoregeln
 
@@ -64,6 +64,10 @@ gartenarbeit_manager/*
 Alternativ einzeln: `gartenarbeit_manager/get`, `/add`, `/update`, `/approve` und `/photo` (jeweils mit vollem Domain-Präfix). Die interne Rollenprüfung bleibt auch mit einer solchen Freigabe wirksam. Bei Kindern kann `/approve` zusätzlich auf der Access-Control-Ebene gesperrt bleiben.
 
 Die Berechtigung zum Anzeigen oder Bearbeiten des HA-Dashboards wird weiterhin im Dashboard bzw. in Access Control festgelegt. Die Integration regelt ihr eigenes Zeitkonto und erstellt keine global sichtbaren Sensoren mit Buchungsdaten.
+
+### Buchungsformular speichert nicht
+
+In Version 1.0.0 und 1.0.1 konnte beim lokalen Aufruf über HTTP ein Formular erscheinen, dessen Speicherfunktion nicht eingerichtet wurde. Ursache war die nur in sicheren Browserkontexten verfügbare Funktion `crypto.randomUUID()`. Version 1.0.2 verwendet eine auch über HTTP verfügbare UUID-Erzeugung. Nach dem Update Home Assistant neu starten und die HA-Oberfläche auf allen betroffenen Geräten vollständig neu laden. Die korrigierte Karte zeigt unter dem Zahnrad die Version 1.0.2. Bleibt ein Fehler bestehen, den genauen Meldungstext im Formular sowie gegebenenfalls den HA-Protokolleintrag prüfen.
 
 ## Bedienung
 
