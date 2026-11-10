@@ -1,11 +1,12 @@
-# HA UI Kit in Gartenarbeit Manager 1.1.0
+# HA UI Kit in Gartenarbeit Manager 1.1.1
 
-Verwendet wird [v9h45n47mh-lab/ha-ui-kit](https://github.com/v9h45n47mh-lab/ha-ui-kit), Version **1.0.0**, fest gebunden an Commit `978160baafd2d26db8dbfb869c5822eedccdb661`. Die Dateien stammen unverändert aus dem Build dieses Standes; `frontend/family-ui.lock.json` hält die SHA-256-Prüfsummen fest. Die MIT-Lizenz liegt neben dem Modul.
+Verwendet wird [v9h45n47mh-lab/ha-ui-kit](https://github.com/v9h45n47mh-lab/ha-ui-kit), Version **1.1.0**, fest gebunden an Commit `6e57c4079ff20d56a7cbd91470216c27c9767e13`. Die Dateien stammen unverändert aus dem Build dieses Standes; `frontend/family-ui.lock.json` hält die SHA-256-Prüfsummen fest. Die MIT-Lizenz liegt neben dem Modul.
 
 | Oberfläche | Verwendete gemeinsame Komponente |
 | --- | --- |
 | Navigation und Einstellungen | `navigation`, Original-SVG `settings` |
 | Zeitkonten, Buchungen und Verlauf | `section`, `row`, `notice` |
+| Buchung anlegen | `programAddButton` mit Textplus und Primärfarbe aus Shutter Manager |
 | Zuweisen, Korrigieren, Freigeben und Bearbeiten | `button`, `iconButton`, Original-SVGs |
 | Kind, Buchungsart, Datum und Minuten | `field`, `selectField`, gemeinsame native Eingabestile |
 | Beschreibung und Fotoauswahl | Fachliches Markup mit den gemeinsamen Formular-/Toolbar-Stilen |

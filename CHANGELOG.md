@@ -1,5 +1,12 @@
 # Änderungen
 
+## 1.1.1
+
+- Aktuellen HA UI Kit 1.1.0 aus dem gemeinsamen Repository fest eingebunden; Modulpfad, Prüfsummen und Lizenz geprüft.
+- „+ Buchung“ bzw. „+ Gartenarbeit“ verwendet jetzt den gemeinsamen Primär-Plusbutton aus dem Shutter Manager mit Textplus statt eines separaten SVG-Plus.
+- Gemeinsame Symbole, Farben, Schrift und Abstände stammen aus dem neuen UI-Kit-Stand. Fachlogik und vorhandene Familien-/Entitätsberechtigungen bleiben erhalten.
+- Desktop/Mobil, helle/dunkle Themes, Buchungen, freie Korrekturen, Fotos und Freigaben werden vor der Veröffentlichung erneut geprüft.
+
 ## 1.1.0
 
 - Gesamte Oberfläche auf den gemeinsamen HA UI Kit 1.0.0 umgestellt: Navigation, Original-SVGs, Farben, Schrift, Abstände, Zeitkonto- und Buchungszeilen, Einstellungen, Filter, Eingaben und Dialoge.

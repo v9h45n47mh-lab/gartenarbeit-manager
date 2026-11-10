@@ -130,8 +130,8 @@ class AdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(paths[0][0],'/gartenarbeit-manager')
         frontend=Path(paths[0][1])
         self.assertTrue((frontend/'card.js').is_file())
-        self.assertTrue((frontend/'family-ui/1.0.0/family-ui.js').is_file())
-        self.assertTrue((frontend/'family-ui/1.0.0/LICENSE').is_file())
+        self.assertTrue((frontend/'family-ui/1.1.0/family-ui.js').is_file())
+        self.assertTrue((frontend/'family-ui/1.1.0/LICENSE').is_file())
         register.assert_called_once_with(self.hass,'/gartenarbeit-manager/card.js?v='+gm.VERSION)
     async def test_write_target_must_be_the_actual_affected_account(self):
         p=payload('worked')

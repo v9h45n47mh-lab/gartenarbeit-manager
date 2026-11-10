@@ -55,9 +55,10 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
    if(dark)await page.locator('#theme').click();
    for(const width of [1100,430,390,375,320]){
     await page.setViewportSize({width,height:1000});await navigate('ledger');await fit();
+    const addControl=card.locator('.page-actions .program-add');assert.equal(await addControl.textContent(),'+ Buchung');assert.equal(await addControl.locator('svg').count(),0);assert.equal(await addControl.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(3, 169, 244)');
     await page.screenshot({path:path.join(output,`ledger-${width}-${dark?'dark':'light'}.png`),fullPage:true});
     await settings().click();await fit();
-    assert.match(await card.locator('.version-info').innerText(),/Oberfläche 1\.1\.0 · Integration 1\.1\.0 · UI 1\.0\.0/);
+    assert.match(await card.locator('.version-info').innerText(),/Oberfläche 1\.1\.1 · Integration 1\.1\.1 · UI 1\.1\.0/);
     const styles=await settings().evaluate(el=>({width:getComputedStyle(el).width,color:getComputedStyle(el).color,svg:getComputedStyle(el.querySelector('svg')).width,fill:getComputedStyle(el.querySelector('svg')).fill}));
     assert.equal(styles.width,width<=600?'42px':'48px');assert.equal(styles.svg,'24px');assert.equal(styles.color,'rgb(3, 169, 244)');assert.equal(styles.fill,styles.color);
     assert.equal(await card.locator('.row-text strong').first().evaluate(el=>getComputedStyle(el).fontSize),'13px');
@@ -101,7 +102,7 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   await navigate('ledger');assert.match(await card.locator('.balance').filter({hasText:'Maximilian'}).innerText(),/2 min offen/);
   assert.deepEqual(errors,[]);assert.deepEqual(moduleFailures,[]);
   assert.ok(requests.filter(r=>/\/(add|update|approve)$/.test(r.type)).every(r=>r.entity_id?.startsWith('sensor.gartenarbeit_')));
-  fs.writeFileSync(path.join(output,'validation.json'),JSON.stringify({version:'1.1.0',uiKit:'1.0.0',widths:[1100,430,390,375,320],themes:['light','dark'],checked:['real ES modules and static files','shared SVGs and typography','responsive overflow','native form submit','signed correction and presets','child report and edit','photo upload and approval','role denials','adjusted approval','storage failure recovery','open form preservation','keyboard, focus and Escape'],pageErrors:errors},null,2));
+  fs.writeFileSync(path.join(output,'validation.json'),JSON.stringify({version:'1.1.1',uiKit:'1.1.0',widths:[1100,430,390,375,320],themes:['light','dark'],checked:['real ES modules and static files','shared SVGs and typography','responsive overflow','native form submit','signed correction and presets','child report and edit','photo upload and approval','role denials','adjusted approval','storage failure recovery','open form preservation','keyboard, focus and Escape'],pageErrors:errors},null,2));
   completed=true;console.log('Browser checks passed: desktop/mobile 1100/430/390/375/320, light/dark, native forms, real adapter writes, photos, roles, errors and keyboard.');
  }finally{if(page&&!completed){await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});const diagnostic=await page.locator('gartenarbeit-manager-card').evaluate(el=>({markup:el.shadowRoot.innerHTML,tab:el._tab,data:el._data,parent:el._data?.parent})).catch(e=>({error:e.message}));fs.writeFileSync(path.join(output,'failure.json'),JSON.stringify(diagnostic,null,2));console.error('Browser failure diagnostic:',JSON.stringify({tab:diagnostic.tab,parent:diagnostic.parent,entries:diagnostic.data?.entries?.length,markupSaved:'failure.json'}));}if(browser)await browser.close();server.close();lines.close();host.stdin.end();host.kill();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

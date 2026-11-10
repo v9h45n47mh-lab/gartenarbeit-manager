@@ -1,10 +1,10 @@
-/* Gartenarbeit Manager 1.1.0 — pinned, locally bundled HA UI Kit. */
+/* Gartenarbeit Manager 1.1.1 — pinned, locally bundled HA UI Kit. */
 import {
-  UI_CSS, UI_VERSION, escapeHtml as gmEsc, button, iconButton, navigation,
+  UI_CSS, UI_VERSION, escapeHtml as gmEsc, button, iconButton, navigation, programAddButton,
   section, row, field, selectField, dialog as uiDialog, notice, versionInfo, bindUI,
-} from './family-ui/1.0.0/family-ui.js';
+} from './family-ui/1.1.0/family-ui.js';
 
-const GM_VERSION='1.1.0';
+const GM_VERSION='1.1.1';
 // getRandomValues also works on local HTTP origins, where randomUUID is unavailable.
 const gmRequestId=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const hex=Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('');return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;};
 const gmDate=day=>new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(day+'T12:00:00'));
@@ -90,7 +90,7 @@ class GartenarbeitManagerCard extends HTMLElement {
     if(!d)content+=`<p class="hint empty">${this._error?'Bitte Benutzerzuordnung und gegebenenfalls Access Control prüfen.':'Gartenzeitkonto wird geladen …'}</p>`;
     else if(this._tab==='settings')content+=this.settings();
     else {
-      content+=`<div class="page-actions"><h3>${gmEsc(title)}</h3>${this._tab==='ledger'?gmButton(d.parent?'Buchung':'Gartenarbeit','book',{book:d.parent?'assigned':'worked'},{icon:'add'}):''}</div>${this.balances()}`;
+      content+=`<div class="page-actions"><h3>${gmEsc(title)}</h3>${this._tab==='ledger'?programAddButton({label:d.parent?'Buchung':'Gartenarbeit',action:'book',data:{book:d.parent?'assigned':'worked'}}):''}</div>${this.balances()}`;
       const filters=(d.parent?gmSelect({name:'child-filter',label:'Kind',marker:'filter',value:this._filter,options:[{value:'all',label:'Beide Kinder'},...d.balances.map(b=>({value:b.child,label:b.child}))]}):'')+(this._tab==='ledger'?gmSelect({name:'status-filter',label:'Status',marker:'status',value:this._status,options:[['all','Alle Buchungen'],['pending','Wartet auf Freigabe'],['approved','Verrechnet']].map(([value,label])=>({value,label}))}):'');
       if(filters)content+=`<div class="grid">${filters}</div>`;
       content+=this.entries();
