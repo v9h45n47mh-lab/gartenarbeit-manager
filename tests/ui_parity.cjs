@@ -14,6 +14,7 @@ async function assertKitParity(page,pairs,context){
   await page.mouse.move(0,0);
   const differences=await page.evaluate(async pairs=>{
     const actual=document.querySelector('gartenarbeit-manager-card').shadowRoot;
+    const focused=actual.activeElement;
     const {kit:k,host,photo}=window.kitReference,reference=host.shadowRoot;
     host.style.width=innerWidth+'px';
     const fields=k.numberControl({id:'reference-minutes',name:'minutes',label:'Minuten',value:5,presets:[-15,-10,-5,5,10,15]})+
@@ -38,6 +39,9 @@ async function assertKitParity(page,pairs,context){
       const left=getComputedStyle(a),right=getComputedStyle(r);
       for(const property of properties)if(left[property]!==right[property])differences.push({selector,property,actual:left[property],reference:right[property]});
     }
+    // Reference dialogs must release their native CloseWatchers before keyboard checks.
+    reference.querySelectorAll('dialog').forEach(dialog=>dialog.close());reference.replaceChildren();
+    if(focused?.isConnected)focused.focus();
     return differences;
   },pairs);
   assert.deepEqual(differences,[],`Unmodified HA UI Kit styles: ${context}`);
