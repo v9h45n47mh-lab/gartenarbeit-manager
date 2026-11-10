@@ -85,11 +85,11 @@ def values(payload, kind, today):
         raise ValueError("Bitte eine Beschreibung mit 1 bis 500 Zeichen eingeben.")
     minutes = payload.get("minutes")
     if type(minutes) is not int or minutes == 0 or abs(minutes) > 1440:
+        if kind == "correction":
+            raise ValueError("Bitte ganze Minuten von −1440 bis +1440 außer 0 eingeben.")
         raise ValueError("Bitte ganze Minuten zwischen 1 und 1440 eingeben.")
     if kind == "assigned" and minutes not in (5, 10, 15):
         raise ValueError("Bitte 5, 10 oder 15 Minuten zuweisen.")
-    if kind == "correction" and minutes not in (-15, -10, -5, 5, 10, 15):
-        raise ValueError("Korrekturen sind mit ±5, ±10 oder ±15 Minuten möglich.")
     if kind == "worked" and minutes < 1:
         raise ValueError("Bitte positive Arbeitsminuten eintragen.")
     return {"minutes": -minutes if kind == "worked" else minutes,

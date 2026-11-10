@@ -21,14 +21,14 @@ title: Gartenarbeit
 
 Die Kartenressource wird automatisch registriert. Falls der Browser die Karte nach der Erstinstallation noch nicht kennt, die HA-App bzw. den Browser einmal vollständig neu laden.
 
-**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.0.0.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
+**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.0.1.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
 
 ## Kontoregeln
 
 | Buchung | Wer? | Minuten | Kontowirkung |
 | --- | --- | --- | --- |
 | Gartenzeit zuweisen | Vera / Manuel | 5, 10 oder 15 | Erhöht offene Minuten sofort |
-| Zeitkonto korrigieren | Vera / Manuel | ±5, ±10 oder ±15 | Positiv erhöht den Rückstand, negativ schreibt gut |
+| Zeitkonto korrigieren | Vera / Manuel | Frei: −1440 bis +1440 ganze Minuten, außer 0; Schnellwerte ±5/10/15 | Positiv erhöht den Rückstand, negativ schreibt gut |
 | Gartenarbeit melden | Jeweiliges Kind | 1–1440 ganze Minuten | Wartet auf Freigabe, ändert den Saldo noch nicht |
 | Gartenarbeit freigeben | Vera / Manuel | 1–1440 ganze Minuten, anpassbar | Zieht die tatsächlich freigegebenen Minuten ab |
 
@@ -70,6 +70,7 @@ Die Berechtigung zum Anzeigen oder Bearbeiten des HA-Dashboards wird weiterhin i
 - **Zeitkonto:** Saldo, Zuweisungen, erledigte Minuten und ausstehende Freigaben. Buchung aufklappen für Details, Foto, Bearbeitung und Änderungsverlauf.
 - **Freigaben:** Eltern sehen alle ausstehenden Meldungen. Vor der Freigabe die anrechenbaren Minuten prüfen und bei Bedarf ändern.
 - **Zahnrad:** Kontoregeln, Rollen und für Eltern die Aktionen zum Zuweisen und Korrigieren.
+- **Korrektur:** Minuten direkt als Zahl eingeben, z. B. `23` für zusätzliche offene Minuten oder `-37` für eine Gutschrift. Die Schnellwerte ±5/10/15 setzen das Zahlenfeld. Auch bestehende Korrekturbuchungen können frei bearbeitet werden.
 - Auswahl nach Kind und Status; längere Listen werden in Gruppen von 100 Buchungen angezeigt.
 - Aktualisierung alle 15 Sekunden, während die Ansicht sichtbar ist, sowie durch Herunterziehen am Seitenanfang. Offene Eingabeformulare werden dabei nicht überschrieben.
 

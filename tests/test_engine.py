@@ -34,6 +34,22 @@ class LedgerTests(unittest.TestCase):
         for n in (5,10,15): self.add(minutes=n)
         for n in (-15,-10,-5,5,10,15): self.add('correction',minutes=n)
         self.assertEqual(self.balance()['remaining'],30)
+    def test_free_corrections_apply_immediately_and_remain_editable(self):
+        self.add(minutes=15)
+        row=self.add('correction',minutes=-37)
+        self.assertEqual(self.balance()['remaining'],-22)
+        self.assertEqual(self.balance()['corrections'],-37)
+        edit={'id':row['id'],'minutes':23,'date':TODAY.isoformat(),'reason':'Korrigierter Wert'}
+        self.data=e.update_entry(self.data,edit,MANUEL,TODAY,NOW)
+        self.assertEqual(self.balance()['remaining'],38)
+        self.assertEqual(self.balance()['corrections'],23)
+        changed=self.data['entries'][-1]
+        self.assertEqual(changed['history'][-1]['before']['minutes'],-37)
+        self.assertEqual(changed['review_status'],'approved')
+    def test_free_correction_boundaries(self):
+        for n in (-1440,-61,-1,1,23,1440):
+            with self.subTest(n=n):
+                self.assertEqual(e.values(payload('correction',minutes=n),'correction',TODAY)['minutes'],n)
     def test_pending_does_not_change_balance(self):
         self.add();self.add('worked',PAUL,minutes=30)
         self.assertEqual(self.balance()['remaining'],15)
@@ -104,7 +120,7 @@ class LedgerTests(unittest.TestCase):
             with self.subTest(n=n),self.assertRaises(ValueError): e.values(payload('worked',minutes=n),'worked',TODAY)
         for n in (1,20,-5):
             with self.assertRaises(ValueError):e.values(payload(minutes=n),'assigned',TODAY)
-        for n in (0,20,-20):
+        for n in (True,False,0,1.2,-1.2,'5',None,1441,-1441):
             with self.assertRaises(ValueError):e.values(payload('correction',minutes=n),'correction',TODAY)
     def test_dates_reasons_and_identifiers(self):
         for day in ('2026-11-11','2026-02-30','2019-12-31','2026-1-01','bad',None):
