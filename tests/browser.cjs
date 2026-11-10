@@ -29,7 +29,7 @@ const server=http.createServer(async(req,res)=>{
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAGUlEQVR4nGMMaIpiIAUwkaR6VMOohiGlAQDImwFMD5ncSQAAAABJRU5ErkJggg==','base64');
 async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{type:'gartenarbeit_manager/add',entity_id:`sensor.gartenarbeit_${child.toLowerCase()}`,revision:serial? (await rpc('v',{type:'gartenarbeit_manager/get'})).revision:0,entry:{request_id:randomUUID(),kind,child,minutes,date:'2026-11-10',reason,photo}});}
 (async()=>{
- let browser;
+ let browser,page,completed=false;
  try{
   await seed('v','assigned','Maximilian',15,'Gartenzeit zugewiesen');
   await seed('m','assigned','Paul',10,'Zusätzliche Gartenzeit');
@@ -38,7 +38,7 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   await seed('v','correction','Paul',-25,'Vorhandenes Guthaben');
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
-  const page=await browser.newPage({viewport:{width:1100,height:1000}});page.setDefaultTimeout(10000);
+  page=await browser.newPage({viewport:{width:1100,height:1000}});page.setDefaultTimeout(10000);
   const errors=[],moduleFailures=[];page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.url().includes('/family-ui/')&&r.status()!==200)moduleFailures.push(r.url());});
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   const card=page.locator('gartenarbeit-manager-card');
@@ -70,7 +70,7 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   await navigate('ledger');await settings().click();assert.equal(await card.getByRole('button',{name:'Benutzer & Rechte',exact:true}).getAttribute('aria-expanded'),'false');
   // All forms use the kit modal, and the footer submit button is natively associated with its form.
   const correction=card.getByRole('button',{name:'Zeitkonto korrigieren',exact:true});await correction.click();
-  let modal=card.getByRole('dialog');await modal.getByLabel('Kind',{exact:true}).selectOption('Paul');await modal.getByLabel('+ zuweisen / − gutschreiben',{exact:true}).fill('0');await modal.getByLabel('Grund der Korrektur',{exact:true}).fill('Freie Korrektur im Browser');
+  let modal=card.getByRole('dialog');await modal.waitFor();console.log('Correction labels:',await modal.locator('label').allTextContents());await modal.getByLabel(/^Kind/).selectOption('Paul');await modal.getByLabel('+ zuweisen / − gutschreiben',{exact:true}).fill('0');await modal.getByLabel('Grund der Korrektur',{exact:true}).fill('Freie Korrektur im Browser');
   assert.equal(await modal.locator('[type=submit]').evaluate(el=>el.form?.id),'gm-booking-form');
   await modal.locator('[type=submit]').click();assert.match(await modal.locator('.form-error').innerText(),/außer 0/);
   await modal.locator('[data-correction-minutes="-15"]').click();assert.equal(await modal.locator('[name=minutes]').inputValue(),'-15');
@@ -102,6 +102,6 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   assert.deepEqual(errors,[]);assert.deepEqual(moduleFailures,[]);
   assert.ok(requests.filter(r=>/\/(add|update|approve)$/.test(r.type)).every(r=>r.entity_id?.startsWith('sensor.gartenarbeit_')));
   fs.writeFileSync(path.join(output,'validation.json'),JSON.stringify({version:'1.1.0',uiKit:'1.0.0',widths:[1100,430,390,375,320],themes:['light','dark'],checked:['real ES modules and static files','shared SVGs and typography','responsive overflow','native form submit','signed correction and presets','child report and edit','photo upload and approval','role denials','adjusted approval','storage failure recovery','open form preservation','keyboard, focus and Escape'],pageErrors:errors},null,2));
-  console.log('Browser checks passed: desktop/mobile 1100/430/390/375/320, light/dark, native forms, real adapter writes, photos, roles, errors and keyboard.');
- }finally{if(browser)await browser.close();server.close();lines.close();host.stdin.end();host.kill();}
+  completed=true;console.log('Browser checks passed: desktop/mobile 1100/430/390/375/320, light/dark, native forms, real adapter writes, photos, roles, errors and keyboard.');
+ }finally{if(page&&!completed){await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});const diagnostic=await page.locator('gartenarbeit-manager-card').evaluate(el=>({markup:el.shadowRoot.innerHTML,tab:el._tab,data:el._data,parent:el._data?.parent})).catch(e=>({error:e.message}));fs.writeFileSync(path.join(output,'failure.json'),JSON.stringify(diagnostic,null,2));console.error('Browser failure diagnostic:',JSON.stringify({tab:diagnostic.tab,parent:diagnostic.parent,entries:diagnostic.data?.entries?.length,markupSaved:'failure.json'}));}if(browser)await browser.close();server.close();lines.close();host.stdin.end();host.kill();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
