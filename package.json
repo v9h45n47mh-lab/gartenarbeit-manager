@@ -1,0 +1,10 @@
+{
+  "name": "gartenarbeit-manager-tests",
+  "private": true,
+  "scripts": {
+    "test": "node tests/test_card.cjs"
+  },
+  "devDependencies": {
+    "linkedom": "0.18.12"
+  }
+}

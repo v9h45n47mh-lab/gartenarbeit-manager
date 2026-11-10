@@ -1,0 +1,66 @@
+name: Validate and publish
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m unittest discover -s tests -v
+      - run: npm install --ignore-scripts
+      - run: npm test
+      - run: node --check custom_components/gartenarbeit_manager/frontend/card.js
+      - run: python scripts/build_release.py
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+  publish:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[publish-release]') }}
+    needs: [tests, hacs, hassfest]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/build_release.py
+      - name: Release metadata
+        id: metadata
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, os
+          version=json.loads(Path('custom_components/gartenarbeit_manager/manifest.json').read_text())['version']
+          notes=Path('CHANGELOG.md').read_text().split('## '+version+'\n',1)[1].split('\n## ',1)[0].strip()
+          Path('release-notes.md').write_text(notes+'\n\nGeprüft: Kontologik, Rechte, Speicherfehler, Karten-DOM, Hassfest und Marketplace/HACS. Ein Live-Installationstest auf HA steht noch aus.\n')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('version='+version+'\ntag=v'+version+'\n')
+          PY
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.metadata.outputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: gh release create "$RELEASE_TAG" --target "$RELEASE_COMMIT" --title "Gartenarbeit Manager $RELEASE_VERSION" --notes-file release-notes.md dist/*.zip dist/SHA256SUMS.txt

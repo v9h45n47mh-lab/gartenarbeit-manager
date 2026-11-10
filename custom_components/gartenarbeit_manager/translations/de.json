@@ -1,0 +1,40 @@
+{
+  "title": "Gartenarbeit Manager",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Familienmitglieder zuordnen",
+        "description": "Wähle für jede Person ihren eigenen Home-Assistant-Benutzer. Vera und Manuel verwalten das Zeitkonto und die Freigaben. Maximilian und Paul melden eigene Gartenarbeit.",
+        "data": {
+          "Vera": "Vera",
+          "Manuel": "Manuel",
+          "Maximilian": "Maximilian",
+          "Paul": "Paul"
+        }
+      }
+    },
+    "error": {
+      "invalid_users": "Bitte vier verschiedene aktive Home-Assistant-Benutzer auswählen."
+    },
+    "abort": {
+      "already_configured": "Gartenarbeit Manager ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Benutzerzuordnung",
+        "description": "Die Rollen werden anhand der hier ausgewählten Benutzer geprüft. Jede Person benötigt einen eigenen Benutzer.",
+        "data": {
+          "Vera": "Vera",
+          "Manuel": "Manuel",
+          "Maximilian": "Maximilian",
+          "Paul": "Paul"
+        }
+      }
+    },
+    "error": {
+      "invalid_users": "Bitte vier verschiedene aktive Home-Assistant-Benutzer auswählen."
+    }
+  }
+}

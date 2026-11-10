@@ -1,0 +1,18 @@
+{
+  "domain": "gartenarbeit_manager",
+  "name": "Gartenarbeit Manager",
+  "codeowners": [
+    "@v9h45n47mh-lab"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/v9h45n47mh-lab/gartenarbeit-manager",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/v9h45n47mh-lab/gartenarbeit-manager/issues",
+  "version": "1.0.0"
+}
