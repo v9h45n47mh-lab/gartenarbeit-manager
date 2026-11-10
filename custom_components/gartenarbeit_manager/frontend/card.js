@@ -1,13 +1,13 @@
-/* Gartenarbeit Manager 1.3.0 — pinned, locally bundled HA UI Kit. */
+/* Gartenarbeit Manager 1.3.1 — pinned, locally bundled HA UI Kit. */
 import {
   UI_CSS, UI_VERSION, escapeHtml as gmEsc, button, iconButton, navigation, programAddButton,
   section, row, field, selectField, dialog as uiDialog, notice, versionInfo, bindUI,
   textareaField, numberControl, photoPicker, photoPreview, photoDialog, compressPhoto,
   emptyState, loadingState, feedback, formError, bindGestures,
   historyList, counter, accountTile, accountTiles,
-} from './family-ui/1.3.0/family-ui.js';
+} from './family-ui/1.3.1/family-ui.js';
 
-const GM_VERSION='1.3.0';
+const GM_VERSION='1.3.1';
 // getRandomValues also works on local HTTP origins, where randomUUID is unavailable.
 const gmRequestId=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const hex=Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('');return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;};
 const gmDate=day=>new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(day+'T12:00:00'));

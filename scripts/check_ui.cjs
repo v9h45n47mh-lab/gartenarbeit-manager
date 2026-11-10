@@ -1,8 +1,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{createHash}=require('node:crypto');
 const root=path.resolve(__dirname,'../custom_components/gartenarbeit_manager/frontend');
 const lock=JSON.parse(fs.readFileSync(path.join(root,'family-ui.lock.json')));
-assert.equal(lock.version,'1.3.0');
-assert.equal(lock.module,'./family-ui/1.3.0/family-ui.js');
+assert.equal(lock.version,'1.3.1');
+assert.equal(lock.module,'./family-ui/1.3.1/family-ui.js');
 const hash=file=>createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 for(const [name,sha] of Object.entries(lock.files))assert.equal(hash(path.join(root,'family-ui',lock.version,name)),sha,name);
 assert.equal(hash(path.join(root,'family-ui',lock.version,'LICENSE')),lock.licenseSha256);

@@ -1,5 +1,12 @@
 # Änderungen
 
+## 1.3.1
+
+- HA UI Kit 1.3.1 übernimmt die exakte Zentrierung: Beide Kontostände stehen unabhängig von einem ausstehenden Hinweis auf derselben Mittellinie.
+- Quadratische halbe Breiten, zwei Kacheln nebeneinander auch mobil, Name oben links und großer mittiger Stand. Hinweistext bleibt am unteren Rand; vollständiger Text bleibt zugänglich.
+- Zuklappbarer Buchungsbereich mit höchstens zehn neuesten passenden Einträgen, gespeicherter Klappzustand und sämtliche offenen Freigaben bleiben erhalten.
+- Keine lokalen CSS-Regeln; Berechtigungen, Korrekturbuchungen, Fotos und gespeicherte Buchungsdaten unverändert. Desktop/Mobil und beide Themes geprüft.
+
 ## 1.3.0
 
 - Aktuelle Zeitkonten als gemeinsame quadratische Kontokacheln aus HA UI Kit 1.3.0: Name oben links, großer mittiger Stand mit Einheit und Guthaben-/Offen-Status.

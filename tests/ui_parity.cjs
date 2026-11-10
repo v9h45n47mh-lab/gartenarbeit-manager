@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 // Both inherit the same HA theme and viewport; the reference never appears in screenshots.
 async function prepareKitReference(page,photo){
   await page.evaluate(async photo=>{
-    const kit=await import('/gartenarbeit-manager/family-ui/1.3.0/family-ui.js');
+    const kit=await import('/gartenarbeit-manager/family-ui/1.3.1/family-ui.js');
     const host=document.createElement('div');Object.assign(host.style,{position:'fixed',left:'-10000px',top:'0',visibility:'hidden',pointerEvents:'none'});host.attachShadow({mode:'open'});document.body.append(host);
     window.kitReference={kit,host,photo};
   },photo);

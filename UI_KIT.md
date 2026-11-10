@@ -1,6 +1,6 @@
-# HA UI Kit in Gartenarbeit Manager 1.3.0
+# HA UI Kit in Gartenarbeit Manager 1.3.1
 
-Verwendet wird [v9h45n47mh-lab/ha-ui-kit](https://github.com/v9h45n47mh-lab/ha-ui-kit), Version **1.3.0**, fest gebunden an Commit `c0eba2a4b4cb99e71ffd8fe3ad78fea39e402513`. Die Dateien stammen unverändert aus dem Build dieses Standes; `frontend/family-ui.lock.json` hält die SHA-256-Prüfsummen fest. Die MIT-Lizenz liegt neben dem Modul.
+Verwendet wird [v9h45n47mh-lab/ha-ui-kit](https://github.com/v9h45n47mh-lab/ha-ui-kit), Version **1.3.1**, fest gebunden an Commit `d2d7612da5624da62b641e8fb88970c4468da17a`. Die Dateien stammen unverändert aus dem Build dieses Standes; `frontend/family-ui.lock.json` hält die SHA-256-Prüfsummen fest. Die MIT-Lizenz liegt neben dem Modul.
 
 | Oberfläche | Verwendete gemeinsame Komponente |
 | --- | --- |
