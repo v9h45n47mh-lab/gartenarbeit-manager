@@ -1,11 +1,12 @@
-# HA UI Kit in Gartenarbeit Manager 1.2.1
+# HA UI Kit in Gartenarbeit Manager 1.3.0
 
-Verwendet wird [v9h45n47mh-lab/ha-ui-kit](https://github.com/v9h45n47mh-lab/ha-ui-kit), Version **1.2.1**, fest gebunden an Commit `78324b4f971b96ec198647a0ac08fcde1a0073d8`. Die Dateien stammen unverändert aus dem Build dieses Standes; `frontend/family-ui.lock.json` hält die SHA-256-Prüfsummen fest. Die MIT-Lizenz liegt neben dem Modul.
+Verwendet wird [v9h45n47mh-lab/ha-ui-kit](https://github.com/v9h45n47mh-lab/ha-ui-kit), Version **1.3.0**, fest gebunden an Commit `c0eba2a4b4cb99e71ffd8fe3ad78fea39e402513`. Die Dateien stammen unverändert aus dem Build dieses Standes; `frontend/family-ui.lock.json` hält die SHA-256-Prüfsummen fest. Die MIT-Lizenz liegt neben dem Modul.
 
 | Oberfläche | Verwendete gemeinsame Komponente |
 | --- | --- |
 | Navigation und Einstellungen | `navigation`, Original-SVG `settings` |
-| Zeitkonten | `section`, `row`, `statusBadge` |
+| Zeitkonten | `accountTiles`, `accountTile`: zwei quadratische halbe Breiten, auch mobil |
+| Auf-/zuklappbarer Buchungsbereich | `section`, gespeicherter Klappzustand; höchstens zehn neueste passende Buchungen |
 | Buchungslisten und Änderungsverlauf | `section`, `row`, `historyList`, `counter`, `notice` |
 | Buchung anlegen | `programAddButton` mit Textplus und Primärfarbe aus Shutter Manager |
 | Zuweisen, Korrigieren, Freigeben und Bearbeiten | `button`, `iconButton`, Original-SVGs |
@@ -34,3 +35,5 @@ Die HA-Route `/gartenarbeit-manager` liefert den vollständigen Frontendordner a
 - `python scripts/build_release.py`: selbstkonsistente Versionen und Prüfsummen sowie vollständige UI-Dateien in beiden ZIP-Varianten.
 
 Die Browserprüfung nutzt die echte Karte und die tatsächliche Python-WebSocket-Verarbeitung; HA-Laufzeit und Speicher sind simuliert. Ein Installationstest in der persönlichen HA-Instanz ist davon getrennt. Der Release-Workflow veröffentlicht erst nach erfolgreichen Funktions-, Browser-, Hassfest- und Marketplace/HACS-Prüfungen.
+
+Die Kacheln werden zusätzlich auf quadratische Geometrie, gleiche halbe Breiten und eine gemeinsame Zeile bei allen fünf Bildschirmbreiten geprüft. Der Stilabgleich schließt Kachelraster, Namens-/Wert-/Einheiten- und Hinweistexte ein. Die App-Tests prüfen Standardzustand und Erhalt des Buchungs-Klappzustands, zehn neueste Einträge nach Erfassungszeit, Filter, unveränderte Datenmenge und alle offenen Freigaben.

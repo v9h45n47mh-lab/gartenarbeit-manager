@@ -43,11 +43,14 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   const errors=[],moduleFailures=[];page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.url().includes('/family-ui/')&&r.status()!==200)moduleFailures.push(r.url());});
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   const card=page.locator('gartenarbeit-manager-card');
-  await card.locator('.balance').nth(1).waitFor();
+  await card.locator('.fui-account-tile').nth(1).waitFor();
   await prepareKitReference(page,'data:image/png;base64,'+png.toString('base64'));
   assert.equal(await card.locator('ha-icon').count(),0,'All UI actions use kit SVGs');
   const settings=()=>card.getByRole('button',{name:'Einstellungen',exact:true});
-  const navigate=pageId=>card.locator(`[data-action="navigate"][data-page="${pageId}"]`).click();
+  const bookingFold=()=>card.locator('[data-settings="gm-bookings"] > .settings-heading-row > button');
+  const setBookings=async expanded=>{if(await bookingFold().getAttribute('aria-expanded')!==String(expanded))await bookingFold().click();};
+  const navigate=async pageId=>{await card.locator(`[data-action="navigate"][data-page="${pageId}"]`).click();if(pageId==='ledger')await setBookings(true);};
+  assert.equal(await bookingFold().getAttribute('aria-expanded'),'false');assert.equal(await card.locator('[data-filter]').isVisible(),false);
   async function fit(){
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'The page must fit horizontally');
    const bad=await card.evaluate(el=>[...el.shadowRoot.querySelectorAll('.card-top,main,.setting-row,.settings-heading-row,.daily-history-row,.modal[open],.modal[open] .modal-body')].filter(n=>n.getClientRects().length&&n.scrollWidth>n.clientWidth+1).map(n=>({class:n.className,width:n.clientWidth,scroll:n.scrollWidth})));
@@ -57,12 +60,15 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
    if(dark)await page.locator('#theme').click();
    for(const width of [1100,430,390,375,320]){
     await page.setViewportSize({width,height:1000});await navigate('ledger');await fit();
+    const tileRects=await card.locator('.fui-account-tile').evaluateAll(tiles=>tiles.map(t=>{const r=t.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,grid:t.parentElement.clientWidth};}));
+    assert.equal(tileRects.length,2);assert.ok(tileRects.every(t=>Math.abs(t.width-t.height)<1&&t.width<t.grid/2));assert.ok(Math.abs(tileRects[0].y-tileRects[1].y)<1&&tileRects[1].x>tileRects[0].x+tileRects[0].width,'Two square half-width tiles stay side by side');
+    await setBookings(false);assert.equal(await card.locator('[data-status]').isVisible(),false);await page.screenshot({path:path.join(output,`account-tiles-${width}-${dark?'dark':'light'}.png`),fullPage:true});await setBookings(true);
     const longEntry=card.locator('.entry').filter({hasText:'Unkraut <img'}).locator('[data-ui=collapse]').first();if(await longEntry.getAttribute('aria-expanded')==='false')await longEntry.click();await fit();
     await assertKitParity(page,listPairs,`booking list ${width}px ${dark?'dark':'light'}`);
     const addControl=card.locator('.page-actions .program-add');assert.equal(await addControl.textContent(),'+ Buchung');assert.equal(await addControl.locator('svg').count(),0);assert.equal(await addControl.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(3, 169, 244)');
     await page.screenshot({path:path.join(output,`ledger-${width}-${dark?'dark':'light'}.png`),fullPage:true});
     await settings().click();await fit();
-    assert.match(await card.locator('.version-info').innerText(),/Oberfläche 1\.2\.1 · Integration 1\.2\.1 · UI 1\.2\.1/);
+    assert.match(await card.locator('.version-info').innerText(),/Oberfläche 1\.3\.0 · Integration 1\.3\.0 · UI 1\.3\.0/);
     const styles=await settings().evaluate(el=>({width:getComputedStyle(el).width,color:getComputedStyle(el).color,svg:getComputedStyle(el.querySelector('svg')).width,fill:getComputedStyle(el.querySelector('svg')).fill}));
     assert.equal(styles.width,width<=600?'42px':'48px');assert.equal(styles.svg,'24px');assert.equal(styles.color,'rgb(3, 169, 244)');assert.equal(styles.fill,styles.color);
     assert.equal(await card.locator('.row-text strong').first().evaluate(el=>getComputedStyle(el).fontSize),'13px');
@@ -90,14 +96,14 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   for(let i=0;i<10;i++){await page.keyboard.press('Tab');assert.equal(await modal.evaluate(el=>el.contains(el.getRootNode().activeElement)),true,'Focus stays in the kit modal');}
   await page.screenshot({path:path.join(output,'correction-320-dark.png'),fullPage:true});
   await modal.locator('[type=submit]').click();await modal.waitFor({state:'detached'});
-  await navigate('ledger');assert.match(await card.locator('.balance').filter({hasText:'Paul'}).innerText(),/52 min Guthaben/);
+  await navigate('ledger');assert.equal(await card.locator('.fui-account-tile').filter({hasText:'Paul'}).locator('.fui-account-value').innerText(),'52');assert.equal(await card.locator('.fui-account-tile').filter({hasText:'Paul'}).locator('.fui-account-unit').innerText(),'min Guthaben');
   assert.equal(await card.locator('.entry img').count(),0,'Descriptions remain escaped');
   // Cancel and Escape return focus to the still-mounted kit opener.
   const add=card.locator('[data-action=book]').first();await add.click();modal=card.getByRole('dialog');await modal.locator('[name=reason]').fill('Nicht speichern');await page.keyboard.press('Escape');await modal.waitFor({state:'detached'});assert.equal(await add.evaluate(el=>el.getRootNode().activeElement===el),true);
   // A storage failure keeps all inputs and re-enables the actual footer button.
   await add.click();modal=card.getByRole('dialog');await modal.locator('[name=reason]').fill('Test-Speicherfehler');await modal.locator('[type=submit]').click();await modal.locator('.form-error').filter({hasText:'Speichern fehlgeschlagen'}).waitFor();assert.equal(await modal.locator('[name=reason]').inputValue(),'Test-Speicherfehler');assert.equal(await modal.locator('[type=submit]').isEnabled(),true);await modal.getByRole('button',{name:'Abbrechen',exact:true}).click();
   // Child view: own account, own pending reports, no parental controls.
-  await page.locator('#person').selectOption('max');await card.locator('.balance').filter({hasText:'Maximilian'}).waitFor();assert.equal(await card.locator('.balance').count(),1);assert.equal(await card.locator('[data-page=approvals]').count(),0);
+  await page.locator('#person').selectOption('max');await card.locator('.fui-account-tile').filter({hasText:'Maximilian'}).waitFor();assert.equal(await card.locator('.fui-account-tile').count(),1);assert.equal(await card.locator('[data-page=approvals]').count(),0);
   await settings().click();assert.equal(await card.locator('[data-book=correction]').count(),0);await navigate('ledger');
   await card.locator('[data-book=worked]').click();modal=card.getByRole('dialog');assert.equal(await modal.locator('[name=child]').count(),0);assert.equal(await modal.locator('[name=kind]').count(),0);
   await modal.locator('[name=minutes]').fill('17');await modal.locator('[name=reason]').fill('Neue Gartenarbeit');
@@ -130,11 +136,20 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   await assert.rejects(()=>rpc('max',{type:'gartenarbeit_manager/add',entity_id:'sensor.gartenarbeit_paul',revision:999,entry:{request_id:randomUUID(),child:'Paul',kind:'worked',minutes:5,date:'2026-11-10',reason:'Foreign account'}}));
   const maxSnapshot=await rpc('max',{type:'gartenarbeit_manager/get'});await assert.rejects(()=>rpc('max',{type:'gartenarbeit_manager/add',entity_id:'sensor.gartenarbeit_maximilian',revision:maxSnapshot.revision,entry:{request_id:randomUUID(),child:'Maximilian',kind:'correction',minutes:-5,date:'2026-11-10',reason:'Forbidden correction'}}));
   // Parent approves adjusted minutes and can still view the uploaded photo.
-  await page.locator('#person').selectOption('v');await card.locator('.balance').nth(1).waitFor();await navigate('approvals');work=card.locator('.entry').filter({hasText:'Neue Gartenarbeit'});await work.locator('[data-ui=collapse]').first().click();await work.getByRole('button',{name:'Prüfen & freigeben',exact:true}).click();modal=card.getByRole('dialog');assert.equal(await modal.locator('[name=minutes]').inputValue(),'19');await modal.getByRole('button',{name:'Foto ansehen',exact:true}).click();await modal.locator('.photo-preview').waitFor();await modal.locator('[name=minutes]').fill('13');await fit();await page.screenshot({path:path.join(output,'approval-320-dark.png'),fullPage:true});await modal.locator('[type=submit]').click();await modal.waitFor({state:'detached'});
-  await navigate('ledger');assert.match(await card.locator('.balance').filter({hasText:'Maximilian'}).innerText(),/2 min offen/);
+  await page.locator('#person').selectOption('v');await card.locator('.fui-account-tile').nth(1).waitFor();await navigate('approvals');work=card.locator('.entry').filter({hasText:'Neue Gartenarbeit'});await work.locator('[data-ui=collapse]').first().click();await work.getByRole('button',{name:'Prüfen & freigeben',exact:true}).click();modal=card.getByRole('dialog');assert.equal(await modal.locator('[name=minutes]').inputValue(),'19');await modal.getByRole('button',{name:'Foto ansehen',exact:true}).click();await modal.locator('.photo-preview').waitFor();await modal.locator('[name=minutes]').fill('13');await fit();await page.screenshot({path:path.join(output,'approval-320-dark.png'),fullPage:true});await modal.locator('[type=submit]').click();await modal.waitFor({state:'detached'});
+  await navigate('ledger');assert.equal(await card.locator('.fui-account-tile').filter({hasText:'Maximilian'}).locator('.fui-account-value').innerText(),'2');assert.equal(await card.locator('.fui-account-tile').filter({hasText:'Maximilian'}).locator('.fui-account-unit').innerText(),'min offen');
+  // Display limits never truncate stored data or hide old pending approvals.
+  await card.evaluate(el=>{
+    const source=el._data.entries.find(e=>e.kind==='worked');
+    el._data={...el._data,entries:Array.from({length:24},(_,i)=>({...source,id:'browser-'+i,child:i%2?'Paul':'Maximilian',reason:'Buchung '+i,created_at:`2026-11-10T09:${String(i).padStart(2,'0')}:00Z`,can_approve:true,can_edit:true,review_status:'pending',photo:false,history:[]}))};
+    el._tab='ledger';el._filter='all';el._status='all';el.render();
+  });await setBookings(true);assert.equal(await card.locator('.entry').count(),10);assert.equal(await card.locator('.entry').first().getAttribute('data-row'),'browser-23');assert.equal(await card.locator('.entry').last().getAttribute('data-row'),'browser-14');assert.equal(await card.locator('[data-action=more]').count(),0);assert.equal(await card.evaluate(el=>el._data.entries.length),24);
+  await card.locator('[data-filter]').selectOption('Paul');assert.equal(await card.locator('.entry').count(),10);assert.equal(await card.locator('.entry').last().getAttribute('data-row'),'browser-5');await fit();
+  await setBookings(false);await card.evaluate(el=>el.render());assert.equal(await bookingFold().getAttribute('aria-expanded'),'false');
+  await navigate('approvals');await card.locator('[data-filter]').selectOption('all');assert.equal(await card.locator('.entry').count(),24,'All pending approvals remain reachable');
   assert.deepEqual(errors,[]);assert.deepEqual(moduleFailures,[]);
   assert.ok(requests.filter(r=>/\/(add|update|approve)$/.test(r.type)).every(r=>r.entity_id?.startsWith('sensor.gartenarbeit_')));
-  fs.writeFileSync(path.join(output,'validation.json'),JSON.stringify({version:'1.2.1',uiKit:'1.2.1',widths:[1100,430,390,375,320],themes:['light','dark'],checked:['real ES modules and static files','computed style parity with untouched kit components','shared booking list and audit history','shared grid forms, buttons and dialogs','shared photo picker, preview and large dialog','responsive overflow','native form submit','signed correction and presets','child report and edit','photo upload and approval','role denials','adjusted approval','storage failure recovery','open form preservation','keyboard, focus and Escape'],pageErrors:errors},null,2));
+  fs.writeFileSync(path.join(output,'validation.json'),JSON.stringify({version:'1.3.0',uiKit:'1.3.0',widths:[1100,430,390,375,320],themes:['light','dark'],checked:['real ES modules and static files','computed style parity with untouched kit components','square half-width account tiles, two columns at every viewport','collapsed booking group preserves state','latest ten matching bookings without truncating data','all pending approvals remain reachable','shared booking list and audit history','shared grid forms, buttons and dialogs','shared photo picker, preview and large dialog','responsive overflow','native form submit','signed correction and presets','child report and edit','photo upload and approval','role denials','adjusted approval','storage failure recovery','open form preservation','keyboard, focus and Escape'],pageErrors:errors},null,2));
   completed=true;console.log('Browser checks passed: desktop/mobile 1100/430/390/375/320, light/dark, native forms, real adapter writes, photos, roles, errors and keyboard.');
  }finally{if(page&&!completed){await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});const diagnostic=await page.locator('gartenarbeit-manager-card').evaluate(el=>({markup:el.shadowRoot.innerHTML,tab:el._tab,data:el._data,parent:el._data?.parent})).catch(e=>({error:e.message}));fs.writeFileSync(path.join(output,'failure.json'),JSON.stringify(diagnostic,null,2));console.error('Browser failure diagnostic:',JSON.stringify({tab:diagnostic.tab,parent:diagnostic.parent,entries:diagnostic.data?.entries?.length,markupSaved:'failure.json'}));}if(browser)await browser.close();server.close();lines.close();host.stdin.end();host.kill();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

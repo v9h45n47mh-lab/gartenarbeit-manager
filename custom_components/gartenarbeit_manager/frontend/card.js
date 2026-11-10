@@ -1,13 +1,13 @@
-/* Gartenarbeit Manager 1.2.1 — pinned, locally bundled HA UI Kit. */
+/* Gartenarbeit Manager 1.3.0 — pinned, locally bundled HA UI Kit. */
 import {
   UI_CSS, UI_VERSION, escapeHtml as gmEsc, button, iconButton, navigation, programAddButton,
   section, row, field, selectField, dialog as uiDialog, notice, versionInfo, bindUI,
   textareaField, numberControl, photoPicker, photoPreview, photoDialog, compressPhoto,
   emptyState, loadingState, feedback, formError, bindGestures,
-  historyList, counter, statusBadge,
-} from './family-ui/1.2.1/family-ui.js';
+  historyList, counter, accountTile, accountTiles,
+} from './family-ui/1.3.0/family-ui.js';
 
-const GM_VERSION='1.2.1';
+const GM_VERSION='1.3.0';
 // getRandomValues also works on local HTTP origins, where randomUUID is unavailable.
 const gmRequestId=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const hex=Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('');return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;};
 const gmDate=day=>new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(day+'T12:00:00'));
@@ -27,7 +27,7 @@ class GartenarbeitManagerCard extends HTMLElement {
   constructor() {
     super();this.attachShadow({mode:'open'});
     this._tab='ledger';this._filter='all';this._status='all';this._busy=false;this._loading=false;
-    this._seq=0;this._error='';this._notice='';this._expanded=new Set();this._folds=new Map();this._visibleCount=100;
+    this._seq=0;this._error='';this._notice='';this._expanded=new Set();this._folds=new Map();
   }
   setConfig(config){this._config={title:'Gartenarbeit',...config};this.render();}
   static getStubConfig(){return {title:'Gartenarbeit'};}
@@ -52,21 +52,26 @@ class GartenarbeitManagerCard extends HTMLElement {
     else if(action==='review')this.review(this._data.entries.find(r=>r.id===data.review));
     else if(action==='photo')this.showPhoto(data.photo);
     else if(action==='retry')this.load();
-    else if(action==='more'){this._visibleCount+=100;this.render();}
     else if(action==='cancel')this.shadowRoot.querySelector('dialog[open]')?.close();
     else if(action==='minutes-change')this.setFormError('');
   }
   block(props){return section({...props,expanded:this._folds.get(props.id)??props.expanded??true});}
   balances() {
-    const content=this._data.balances.map(b=>row({title:b.child,description:`Zugewiesen ${b.assigned} · Erledigt ${b.worked}${b.corrections?` · Korrektur ${b.corrections>0?'+':''}${b.corrections} min`:''}${b.pending?` · ${b.pending} min warten auf Freigabe`:''}`,trailing:statusBadge({label:`${Math.abs(b.remaining)} min ${b.remaining<0?'Guthaben':'offen'}`,state:b.remaining<0?'success':'neutral'})}).replace('class="setting-row"','class="setting-row balance"')).join('');
+    const tiles=this._data.balances.map(b=>accountTile({id:`gm-account-${b.child.toLowerCase()}`,label:b.child,value:Math.abs(b.remaining),unit:'min',status:b.remaining<0?'Guthaben':b.remaining>0?'offen':'ausgeglichen',state:b.remaining<0?'success':'neutral',description:b.pending?`${b.pending} min warten auf Freigabe`:'',details:`Zugewiesen ${b.assigned} · Erledigt ${b.worked}${b.corrections?` · Korrektur ${b.corrections>0?'+':''}${b.corrections} min`:''}`})).join('');
+    const content=accountTiles({content:tiles,label:this._data.balances.length===1?'Dein Zeitkonto':'Zeitkonten'});
     return this.block({id:'gm-balances',title:this._data.balances.length===1?'Dein Zeitkonto':'Zeitkonten',content}).replace('class="settings-group"','class="settings-group balances"');
+  }
+  visibleEntries() {
+    const d=this._data;
+    const entries=d.entries.filter(r=>(this._filter==='all'||r.child===this._filter)&&(this._tab==='approvals'?r.can_approve:this._status==='all'||r.review_status===this._status));
+    if(this._tab==='approvals')return entries;
+    return [...entries].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,10);
   }
   entries() {
     const d=this._data;
-    const entries=d.entries.filter(r=>(this._filter==='all'||r.child===this._filter)&&(this._tab==='approvals'?r.can_approve:this._status==='all'||r.review_status===this._status));
-    const count=Math.min(entries.length,this._visibleCount);
-    if(!count)return emptyState(this._tab==='approvals'?'Keine Gartenarbeit wartet auf Freigabe.':'Keine Buchungen in dieser Ansicht.');
-    return entries.slice(0,count).map(r=>{
+    const entries=this.visibleEntries();
+    if(!entries.length)return emptyState(this._tab==='approvals'?'Keine Gartenarbeit wartet auf Freigabe.':'Keine Buchungen in dieser Ansicht.');
+    return entries.map(r=>{
       const pending=r.review_status==='pending',label=r.kind==='worked'?(pending?'Gemeldet':'Freigegeben'):r.kind==='correction'?'Korrektur':'Zugewiesen';
       const actions=(r.can_approve?iconButton({icon:'success',label:'Prüfen & freigeben',action:'review',data:{review:r.id}}):'')+(r.photo?gmButton('Foto','photo',{photo:r.id}):'')+(r.can_edit?iconButton({icon:'edit',label:'Bearbeiten',action:'edit',data:{edit:r.id}}):'');
       let content=row({title:label,description:`${d.parent?r.child+' · ':''}${gmDate(r.date)}`,trailing:actions});
@@ -77,7 +82,7 @@ class GartenarbeitManagerCard extends HTMLElement {
       if(r.reported_minutes!=null)content+=row({title:`Gemeldet: ${r.reported_minutes} Minuten`,description:pending?'Wartet auf Prüfung':`Angerechnet: ${-r.minutes} Minuten`});
       if(r.history?.length)content+=this.block({id:`gm-history-${r.id}`,title:'Änderungsverlauf',trailing:counter(r.history.length,'Änderungen'),expanded:false,content:historyList({entries:r.history.map(h=>({time:gmClock(h.at),datetime:h.at,title:`${h.action==='approved'?'Freigegeben':'Bearbeitet'} von ${h.by}`,description:`${gmTime(h.at)} · Vorher: ${h.before.minutes} min · ${gmDate(h.before.date)} · ${h.before.reason}`,status:'success',result:h.action==='approved'?'Freigegeben':'Bearbeitet'}))})});
       return this.block({id:`gm-entry-${r.id}`,title:r.reason,expanded:false,trailing:counter(`${pending?Math.abs(r.minutes):(r.minutes>0?'+':'')+r.minutes} min`),content}).replace('class="settings-group"',`class="settings-group entry" data-row="${gmEsc(r.id)}"`);
-    }).join('')+(entries.length>count?gmButton(`Weitere ${Math.min(100,entries.length-count)} Buchungen anzeigen`,'more'):'');
+    }).join('');
   }
   settings() {
     let account=row({title:'Offene Minuten und Guthaben',description:'Positive Werte sind offene Gartenminuten. Negative Werte sind Guthaben. Gemeldete Arbeit zählt erst nach Freigabe.'});
@@ -97,12 +102,11 @@ class GartenarbeitManagerCard extends HTMLElement {
     else {
       content+=`<div class="page-actions"><h3>${gmEsc(title)}</h3>${this._tab==='ledger'?programAddButton({label:d.parent?'Buchung':'Gartenarbeit',action:'book',data:{book:d.parent?'assigned':'worked'}}):''}</div>${this.balances()}`;
       const filters=(d.parent?gmSelect({name:'child-filter',label:'Kind',marker:'filter',value:this._filter,options:[{value:'all',label:'Beide Kinder'},...d.balances.map(b=>({value:b.child,label:b.child}))]}):'')+(this._tab==='ledger'?gmSelect({name:'status-filter',label:'Status',marker:'status',value:this._status,options:[['all','Alle Buchungen'],['pending','Wartet auf Freigabe'],['approved','Verrechnet']].map(([value,label])=>({value,label}))}):'');
-      if(filters)content+=`<div class="grid">${filters}</div>`;
-      content+=this.entries();
+      content+=this.block({id:this._tab==='ledger'?'gm-bookings':'gm-approvals',title:this._tab==='ledger'?'Buchungen':'Freigaben',trailing:counter(this.visibleEntries().length,this._tab==='ledger'?'Letzte Buchungen, höchstens zehn':'Offene Freigaben'),expanded:this._tab==='approvals',content:(filters?`<div class="grid">${filters}</div>`:'')+this.entries()});
     }
     this.shadowRoot.innerHTML=`<style>${UI_CSS}</style><ha-card>${navigation({label:title,items,active:this._tab,settings:!!d,help:false})}<main>${content}</main></ha-card><div class="dialog-host"></div>`;
-    this.shadowRoot.querySelector('[data-filter]')?.addEventListener('change',e=>{this._filter=e.target.value;this._visibleCount=100;this.render();});
-    this.shadowRoot.querySelector('[data-status]')?.addEventListener('change',e=>{this._status=e.target.value;this._visibleCount=100;this.render();});
+    this.shadowRoot.querySelector('[data-filter]')?.addEventListener('change',e=>{this._filter=e.target.value;this.render();});
+    this.shadowRoot.querySelector('[data-status]')?.addEventListener('change',e=>{this._status=e.target.value;this.render();});
   }
   dialog(title,body,submit='Speichern') {
     const save=gmButton(submit,'submit',{}, {variant:'primary',icon:'save'}).replace('type="button"','type="submit" form="gm-booking-form"');

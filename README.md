@@ -2,7 +2,7 @@
 
 # Gartenarbeit Manager
 
-Lokales Gartenzeitkonto für Home Assistant. Übernimmt die Gartenarbeitslogik der Haushalts-Site: Kinder melden ihre Arbeit, Vera und Manuel prüfen die Minuten und geben sie frei. Die responsive Dashboard-Karte verwendet vollständig den gemeinsamen HA UI Kit 1.2.1 auf Basis des Shutter Managers. Symbole, Farben, Schrift, Abstände, Navigation, Einstellungszeilen, Eingaben und Dialoge kommen aus dessen lokal gebundenen Komponenten und respektieren das aktive HA-Theme einschließlich Dunkelmodus.
+Lokales Gartenzeitkonto für Home Assistant. Übernimmt die Gartenarbeitslogik der Haushalts-Site: Kinder melden ihre Arbeit, Vera und Manuel prüfen die Minuten und geben sie frei. Die responsive Dashboard-Karte verwendet vollständig den gemeinsamen HA UI Kit 1.3.0 auf Basis des Shutter Managers. Symbole, Farben, Schrift, Abstände, Navigation, Einstellungszeilen, Eingaben und Dialoge kommen aus dessen lokal gebundenen Komponenten und respektieren das aktive HA-Theme einschließlich Dunkelmodus.
 
 ## Installation über Marketplace
 
@@ -21,7 +21,7 @@ title: Gartenarbeit
 
 Die Kartenressource wird automatisch registriert. Falls der Browser die Karte nach der Erstinstallation noch nicht kennt, die HA-App bzw. den Browser einmal vollständig neu laden.
 
-**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.2.1.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
+**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.3.0.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
 
 ## Kontoregeln
 
@@ -104,9 +104,9 @@ Die **Logik** wird übernommen. Vorhandene Site-Buchungen und Fotos werden nicht
 
 ## Gemeinsamer HA UI Kit
 
-Gartenarbeit Manager 1.2.1 bindet [HA UI Kit 1.2.1](https://github.com/v9h45n47mh-lab/ha-ui-kit/tree/78324b4f971b96ec198647a0ac08fcde1a0073d8) fest unter `frontend/family-ui/1.2.1/` ein. Die Lock-Datei enthält die Prüfsummen; JavaScript, CSS, Manifest und Lizenz werden mit jeder Installation ausgeliefert. Die HA-Route liefert den gesamten Frontendordner für die relativen Modulimporte aus. Es gibt keinen automatischen Bezug von main/latest und keinen externen Laufzeitaufruf.
+Gartenarbeit Manager 1.3.0 bindet [HA UI Kit 1.3.0](https://github.com/v9h45n47mh-lab/ha-ui-kit/tree/c0eba2a4b4cb99e71ffd8fe3ad78fea39e402513) fest unter `frontend/family-ui/1.3.0/` ein. Die Lock-Datei enthält die Prüfsummen; JavaScript, CSS, Manifest und Lizenz werden mit jeder Installation ausgeliefert. Die HA-Route liefert den gesamten Frontendordner für die relativen Modulimporte aus. Es gibt keinen automatischen Bezug von main/latest und keinen externen Laufzeitaufruf.
 
-Unter dem Zahnrad zeigt die Versionszeile Oberfläche, Integration und UI-Version. Nach dem Update HA neu starten und die Oberfläche vollständig neu laden: Erwartet werden **Oberfläche 1.2.1**, **Integration 1.2.1** und **UI 1.2.1**. Alle Gestaltungsregeln kommen unverändert aus dem Kit; es gibt keine lokalen CSS-Überschreibungen. Die technische Zuordnung und der direkte Stilvergleich stehen in [UI_KIT.md](UI_KIT.md).
+Unter dem Zahnrad zeigt die Versionszeile Oberfläche, Integration und UI-Version. Nach dem Update HA neu starten und die Oberfläche vollständig neu laden: Erwartet werden **Oberfläche 1.3.0**, **Integration 1.3.0** und **UI 1.3.0**. Alle Gestaltungsregeln kommen unverändert aus dem Kit; es gibt keine lokalen CSS-Überschreibungen. Die technische Zuordnung und der direkte Stilvergleich stehen in [UI_KIT.md](UI_KIT.md).
 
 ## Marketplace-Logo
 
@@ -127,3 +127,9 @@ python scripts/build_release.py
 Die Tests prüfen Kontorechnung, Rollen und Sichtbarkeit, Freigaben, Bearbeitung, Wiederholungsversuche, parallele Änderungen, Fotozugriff, Speicherfehler und die tatsächliche Kartenlogik im DOM. Die Adaptertests verwenden einen simulierten HA-Speicher; sie ersetzen keinen Installationstest auf einer laufenden HA-Instanz. GitHub prüft zusätzlich mit Hassfest und der Marketplace/HACS-Validierung. Veröffentlichung und Release-Archive erfolgen erst nach erfolgreichen CI-Prüfungen.
 
 MIT-Lizenz.
+
+## Zeitkonten und letzte Buchungen
+
+Die Kontokacheln stehen immer zu zweit nebeneinander und sind quadratisch. Name oben links, aktueller Stand groß in der Mitte. Ein einzelnes eigenes Konto bleibt halbbreit. Ausstehende Minuten erscheinen als Hinweis; die vollständige Kontozusammensetzung ist als Tooltip und zugängliche Beschreibung enthalten.
+
+„Buchungen“ unter der Trennlinie ist zunächst zugeklappt. Nach dem Aufklappen werden die zehn neuesten Buchungen angezeigt, die zu den gewählten Filtern passen, sortiert nach Erfassungszeit. Ältere Buchungen werden dadurch nicht gelöscht. „Freigaben“ enthält unabhängig davon alle noch offenen Meldungen.

@@ -1,5 +1,14 @@
 # Änderungen
 
+## 1.3.0
+
+- Aktuelle Zeitkonten als gemeinsame quadratische Kontokacheln aus HA UI Kit 1.3.0: Name oben links, großer mittiger Stand mit Einheit und Guthaben-/Offen-Status.
+- Zwei gleich breite Kacheln nebeneinander, ausdrücklich auch auf dem Handy. Kinder sehen weiterhin ausschließlich ihr eigenes Konto; die eigene Kachel bleibt halbbreit.
+- Bereich „Buchungen“ unter der Trennlinie standardmäßig zugeklappt. Filter und Buchungen werden gemeinsam auf-/zugeklappt; der Klappzustand bleibt bei Aktualisierung und Filterwechsel erhalten.
+- Geöffnet werden nur die zehn neuesten passenden Buchungen nach Erfassungszeit gezeigt. Ältere Datensätze bleiben gespeichert. Im Tab „Freigaben“ bleiben sämtliche offenen Meldungen erreichbar.
+- Vollständige Kontozusammensetzung bleibt als zugängliche Beschreibung und Tooltip der Kachel verfügbar; noch nicht freigegebene Minuten erscheinen zusätzlich als Hinweis.
+- Buchungen, freie Korrekturen, Fotos, Freigaben und Konto-/Label-Berechtigungen erhalten. Desktop/Mobil, helle/dunkle Themes, Kachelgeometrie, Listenbegrenzung und Klappzustände werden geprüft.
+
 ## 1.2.1
 
 - Gestaltung vollständig aus HA UI Kit 1.2.1: Alle lokalen CSS-Regeln entfernt. Formularraster, Schrift, Farben, Abstände, Einrückungen und Symbole kommen unverändert aus dem Kit.
