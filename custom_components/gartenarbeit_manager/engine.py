@@ -204,6 +204,17 @@ def approve_entry(data, payload, actor, now):
     return result
 
 
+def account_balance(data, child):
+    """The real account state exposed by its sensor and the authenticated card."""
+    rows = [r for r in data["entries"] if r["child"] == child]
+    approved = [r for r in rows if r["review_status"] == "approved"]
+    return {"child": child, "remaining": sum(r["minutes"] for r in approved),
+            "assigned": sum(r["minutes"] for r in approved if r["kind"] == "assigned"),
+            "worked": -sum(r["minutes"] for r in approved if r["kind"] == "worked"),
+            "corrections": sum(r["minutes"] for r in approved if r["kind"] == "correction"),
+            "pending": -sum(r["minutes"] for r in rows if r["review_status"] == "pending")}
+
+
 def snapshot(data, actor, today):
     entries = []
     for row in data["entries"]:
@@ -219,12 +230,6 @@ def snapshot(data, actor, today):
     for child in CHILDREN:
         if not actor["parent"] and actor["name"] != child:
             continue
-        rows = [r for r in entries if r["child"] == child]
-        approved = [r for r in rows if r["review_status"] == "approved"]
-        balances.append({"child": child, "remaining": sum(r["minutes"] for r in approved),
-                         "assigned": sum(r["minutes"] for r in approved if r["kind"] == "assigned"),
-                         "worked": -sum(r["minutes"] for r in approved if r["kind"] == "worked"),
-                         "corrections": sum(r["minutes"] for r in approved if r["kind"] == "correction"),
-                         "pending": -sum(r["minutes"] for r in rows if r["review_status"] == "pending")})
+        balances.append(account_balance(data, child))
     return {"revision": data["revision"], "today": today.isoformat(), "parent": actor["parent"],
             "person": actor["name"], "entries": entries, "balances": balances}

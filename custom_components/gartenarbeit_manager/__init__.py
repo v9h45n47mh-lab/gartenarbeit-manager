@@ -12,14 +12,18 @@ except ImportError:
     import voluptuous as vol
 from homeassistant.components import frontend, websocket_api
 from homeassistant.components.http import StaticPathConfig
+from homeassistant.auth.permissions.const import POLICY_CONTROL
+from homeassistant.const import Platform
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, TITLE, VERSION
+from .const import DOMAIN, SIGNAL_UPDATED, TITLE, VERSION
 from .engine import (actor_for, add_entry, approve_entry, duplicate, empty_data,
                      find_entry, snapshot, update_entry, validate_photo)
 
 _LOGGER = logging.getLogger(__name__)
+PLATFORMS = [Platform.SENSOR]
 
 
 async def async_setup(hass, config):
@@ -35,6 +39,11 @@ async def async_setup_entry(hass, entry):
     manager = Manager(hass, entry)
     await manager.load()
     hass.data[DOMAIN] = manager
+    try:
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    except Exception:
+        hass.data.pop(DOMAIN, None)
+        raise
     entry.async_on_unload(entry.add_update_listener(reload_entry))
     return True
 
@@ -44,6 +53,8 @@ async def reload_entry(hass, entry):
 
 
 async def async_unload_entry(hass, entry):
+    if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        return False
     manager = hass.data.get(DOMAIN)
     if manager:
         async with manager.lock:
@@ -57,9 +68,15 @@ class Manager:
         self.data = empty_data()
         self.lock = asyncio.Lock()
         self.store = Store(hass, 1, DOMAIN)
+        self.account_entities = {}
 
     async def load(self):
         self.data = await self.store.async_load() or empty_data()
+
+    @property
+    def account_entity_ids(self):
+        return {child: entity.entity_id for child, entity in self.account_entities.items()
+                if entity.entity_id}
 
     def today(self):
         return dt_util.as_local(dt_util.utcnow()).date()
@@ -71,7 +88,23 @@ class Manager:
         return actor_for(user.id, mapping, user.is_admin)
 
     def snapshot(self, actor):
-        return {**snapshot(self.data, actor, self.today()), "version": VERSION}
+        result = snapshot(self.data, actor, self.today())
+        for balance in result["balances"]:
+            balance["entity_id"] = self.account_entity_ids.get(balance["child"])
+        return {**result, "version": VERSION}
+
+    def mutation_target(self, actor, operation, payload, entity_id):
+        """Bind the claimed HA resource to the account this write actually changes."""
+        if operation == "add":
+            child = payload.get("child")
+        else:
+            child = find_entry(self.data, payload.get("id"), actor)["child"]
+        expected = self.account_entity_ids.get(child)
+        if not expected:
+            raise ValueError("Kontoentität nicht verfügbar. Integration und HA-Oberfläche neu laden.")
+        if entity_id != expected:
+            raise PermissionError("Das angegebene Ziel gehört nicht zum betroffenen Gartenzeitkonto.")
+        return expected
 
     def photo_store(self, photo_id):
         return Store(self.hass, 1, DOMAIN + ".photo." + photo_id)
@@ -119,6 +152,7 @@ class Manager:
                     await self.cleanup_photo(photo_id)
                 raise
             self.data = result
+            async_dispatcher_send(self.hass, SIGNAL_UPDATED)
             # Immutable photo objects make ledger publication atomic. Cleanup failure
             # cannot turn an acknowledged booking into a failed request.
             if operation == "update" and "photo" in payload and old_photo:
@@ -142,6 +176,9 @@ async def respond(hass, connection, msg, operation=None):
         if operation == "photo":
             result = await manager.photo(actor, msg["entry_id"])
         elif operation:
+            target = manager.mutation_target(actor, operation, msg["entry"], msg.get("entity_id"))
+            if not connection.user.permissions.check_entity(target, POLICY_CONTROL):
+                raise PermissionError("Keine Bedienberechtigung für dieses Gartenzeitkonto.")
             result = await manager.mutate(actor, msg["revision"], operation, msg["entry"])
         else:
             result = manager.snapshot(actor)
@@ -162,21 +199,21 @@ async def ws_get(hass, connection, msg):
 
 
 @websocket_api.websocket_command({vol.Required("type"): DOMAIN + "/add",
-    vol.Required("revision"): vol.All(int, vol.Range(min=0)), vol.Required("entry"): dict})
+    vol.Required("entity_id"): str, vol.Required("revision"): vol.All(int, vol.Range(min=0)), vol.Required("entry"): dict})
 @websocket_api.async_response
 async def ws_add(hass, connection, msg):
     await respond(hass, connection, msg, "add")
 
 
 @websocket_api.websocket_command({vol.Required("type"): DOMAIN + "/update",
-    vol.Required("revision"): vol.All(int, vol.Range(min=0)), vol.Required("entry"): dict})
+    vol.Required("entity_id"): str, vol.Required("revision"): vol.All(int, vol.Range(min=0)), vol.Required("entry"): dict})
 @websocket_api.async_response
 async def ws_update(hass, connection, msg):
     await respond(hass, connection, msg, "update")
 
 
 @websocket_api.websocket_command({vol.Required("type"): DOMAIN + "/approve",
-    vol.Required("revision"): vol.All(int, vol.Range(min=0)), vol.Required("entry"): dict})
+    vol.Required("entity_id"): str, vol.Required("revision"): vol.All(int, vol.Range(min=0)), vol.Required("entry"): dict})
 @websocket_api.async_response
 async def ws_approve(hass, connection, msg):
     await respond(hass, connection, msg, "approve")

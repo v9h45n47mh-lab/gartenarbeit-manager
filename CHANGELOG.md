@@ -1,5 +1,13 @@
 # Änderungen
 
+## 1.0.3
+
+- Access-Control-Kompatibilität: Jede Buchung, Bearbeitung und Freigabe benennt die tatsächlich betroffene Kontoentität als `entity_id`.
+- Zwei echte Kontosensoren zeigen die offenen Minuten bzw. das Guthaben; standardmäßig `sensor.gartenarbeit_maximilian` und `sensor.gartenarbeit_paul`. Die Karte verwendet stets die tatsächlichen IDs, auch nach einer Umbenennung.
+- Das Backend prüft die Zuordnung des Ziels zum betroffenen Konto und die HA-Bedienberechtigung. Ein fremdes oder nur vorgetäuschtes Ziel wird abgewiesen; die Familienrollen bleiben zusätzlich wirksam.
+- Access-Control-Anleitung ergänzt: `gartenarbeit_manager/*` unter Advanced → Always allow und „Read and control“ für das jeweilige Konto. Die Befehlsfreigabe allein hebt die zusätzliche Zielprüfung nicht auf.
+- Kontosensoren aktualisieren sich nach erfolgreicher Speicherung. Beschreibungen, Fotos und Buchungsdetails stehen nicht in den Sensorattributen.
+
 ## 1.0.2
 
 - Buchungsformulare bei lokalem HTTP-Zugriff repariert: Die bisher verwendete Browserfunktion `crypto.randomUUID()` steht dort nicht zur Verfügung und hat das Einrichten der Speicherfunktion unterbrochen.

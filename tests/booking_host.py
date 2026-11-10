@@ -4,7 +4,7 @@ import json
 import sys
 from types import SimpleNamespace
 
-from test_adapter import MAPPING, Store, gm
+from test_adapter import ACCOUNT_IDS, MAPPING, Store, gm
 
 
 async def main():
@@ -12,6 +12,7 @@ async def main():
     hass = SimpleNamespace(data={})
     entry = SimpleNamespace(data={"users": MAPPING}, options={})
     manager = gm.Manager(hass, entry)
+    manager.account_entities = {child: SimpleNamespace(entity_id=eid) for child, eid in ACCOUNT_IDS.items()}
     hass.data[gm.DOMAIN] = manager
     handlers = {gm.DOMAIN + "/" + name: getattr(gm, "ws_" + name)
                 for name in ("get", "add", "update", "approve", "photo")}
@@ -29,9 +30,11 @@ async def main():
             if envelope.get("reload"):
                 manager = gm.Manager(hass, entry)
                 await manager.load()
+                manager.account_entities = {child: SimpleNamespace(entity_id=eid) for child, eid in ACCOUNT_IDS.items()}
                 hass.data[gm.DOMAIN] = manager
             connection = SimpleNamespace(
-                user=SimpleNamespace(id=envelope["user"], is_active=True, is_admin=False),
+                user=SimpleNamespace(id=envelope["user"], is_active=True, is_admin=False,
+                                     permissions=SimpleNamespace(check_entity=lambda *args: True)),
                 send_result=result, send_error=error)
             await handlers[msg["type"]](hass, connection, msg)
         except Exception as exc:

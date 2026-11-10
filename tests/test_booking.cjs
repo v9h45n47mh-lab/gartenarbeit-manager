@@ -44,6 +44,7 @@ async function bookings(localHttp){
   const afterReload=await send('v',{type:'gartenarbeit_manager/get'},true);
   assert.equal(afterReload.entries.length,3);assert.equal(afterReload.balances.find(b=>b.child==='Maximilian').remaining,8);assert.equal(afterReload.balances.find(b=>b.child==='Maximilian').pending,19);
   const ids=requests.filter(r=>r.type.endsWith('/add')).map(r=>r.entry.request_id);assert.ok(ids.every(id=>uuid.test(id)));assert.equal(new Set(ids).size,3);assert.equal(ids.at(-1),ids.at(-2));
+  assert.ok(requests.filter(r=>/\/(add|update|approve)$/.test(r.type)).every(r=>r.entity_id==='sensor.gartenarbeit_maximilian'),'Every mutation must name the affected account entity');
   console.log(`Booking path passed (${localHttp?'local HTTP without randomUUID':'HTTPS/Cloud crypto'}): child report, signed parent correction, editing, approval, lost response retry, UUID format and reload.`);
  }finally{for(const card of cards)card.remove();clearTimeout(timeout);lines.close();host.stdin.end();host.kill();}
 }

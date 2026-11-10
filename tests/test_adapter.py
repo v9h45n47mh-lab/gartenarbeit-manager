@@ -21,7 +21,25 @@ module('homeassistant.components')
 module('homeassistant.components.frontend',add_extra_js_url=lambda *a:None)
 module('homeassistant.components.websocket_api',websocket_command=lambda schema:lambda f:f,async_response=lambda f:f,async_register_command=lambda *a:None)
 module('homeassistant.components.http',StaticPathConfig=lambda *a:a)
+module('homeassistant.auth')
+module('homeassistant.auth.permissions')
+module('homeassistant.auth.permissions.const',POLICY_CONTROL='control',POLICY_READ='read')
+module('homeassistant.const',Platform=SimpleNamespace(SENSOR='sensor'),UnitOfTime=SimpleNamespace(MINUTES='min'))
 module('homeassistant.helpers')
+def dispatcher_send(hass,signal):
+    for listener in list(getattr(hass,'_signals',{}).get(signal,[])):listener()
+def dispatcher_connect(hass,signal,listener):
+    if not hasattr(hass,'_signals'):hass._signals={}
+    listeners=hass._signals.setdefault(signal,[]);listeners.append(listener)
+    return lambda:listeners.remove(listener)
+module('homeassistant.helpers.dispatcher',async_dispatcher_send=dispatcher_send,async_dispatcher_connect=dispatcher_connect)
+class SensorEntity:
+    async def async_added_to_hass(self):self._removers=[]
+    async def async_will_remove_from_hass(self):
+        for remove in self._removers:remove()
+    def async_on_remove(self,fn):self._removers.append(fn)
+    def async_write_ha_state(self):self.writes=getattr(self,'writes',0)+1
+module('homeassistant.components.sensor',SensorEntity=SensorEntity)
 class Store:
     records={}
     def __init__(self,hass,version,key):self.key=key
@@ -34,6 +52,7 @@ module('homeassistant.util.dt',utcnow=lambda:datetime(2026,11,10,9,tzinfo=timezo
 spec=importlib.util.spec_from_file_location('gm_component',ROOT/'custom_components/gartenarbeit_manager/__init__.py',submodule_search_locations=[str(ROOT/'custom_components/gartenarbeit_manager')])
 gm=importlib.util.module_from_spec(spec);sys.modules[spec.name]=gm;spec.loader.exec_module(gm)
 MAPPING={'Vera':'v','Manuel':'m','Maximilian':'max','Paul':'p'}
+ACCOUNT_IDS={'Maximilian':'sensor.gartenarbeit_maximilian','Paul':'sensor.gartenarbeit_paul'}
 VERA=gm.actor_for('v',MAPPING);PAUL=gm.actor_for('p',MAPPING);MAX=gm.actor_for('max',MAPPING)
 PHOTO='data:image/png;base64,'+base64.b64encode(b'\x89PNG\r\n\x1a\n'+b'0'*100).decode()
 def payload(kind='assigned',**kw):return {'request_id':str(uuid4()),'kind':kind,'child':'Paul','minutes':15,'date':'2026-11-10','reason':'Gartenarbeit',**kw}
@@ -41,6 +60,7 @@ class AdapterTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         Store.records={};self.hass=SimpleNamespace(data={})
         self.manager=gm.Manager(self.hass,SimpleNamespace(data={'users':MAPPING},options={}))
+        self.manager.account_entities={child:SimpleNamespace(entity_id=eid) for child,eid in ACCOUNT_IDS.items()}
         self.hass.data[gm.DOMAIN]=self.manager
     async def test_storage_failure_never_publishes_new_balance(self):
         self.manager.store.async_save=AsyncMock(side_effect=OSError('disk'))
@@ -89,9 +109,9 @@ class AdapterTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(PermissionError):await self.manager.mutate(PAUL,0,'add',payload(photo=PHOTO))
         self.assertEqual(Store.records,{})
     async def test_ws_commands_use_authenticated_user(self):
-        connection=SimpleNamespace(user=SimpleNamespace(id='p',is_active=True,is_admin=False),send_error=lambda *a:errors.append(a),send_result=lambda *a:results.append(a))
+        connection=SimpleNamespace(user=SimpleNamespace(id='p',is_active=True,is_admin=False,permissions=SimpleNamespace(check_entity=lambda *a:True)),send_error=lambda *a:errors.append(a),send_result=lambda *a:results.append(a))
         errors=[];results=[]
-        await gm.respond(self.hass,connection,{'id':1,'revision':0,'entry':payload(),'actor':{'parent':True}},'add')
+        await gm.respond(self.hass,connection,{'id':1,'entity_id':ACCOUNT_IDS['Paul'],'revision':0,'entry':payload(),'actor':{'parent':True}},'add')
         self.assertEqual(errors[0][1],'unauthorized');self.assertEqual(results,[])
         connection.user.is_active=False
         await gm.respond(self.hass,connection,{'id':2})
@@ -102,4 +122,28 @@ class AdapterTests(unittest.IsolatedAsyncioTestCase):
     async def test_invalid_photo_does_not_write(self):
         with self.assertRaises(ValueError):await self.manager.mutate(PAUL,0,'add',payload('worked',photo='bad'))
         self.assertEqual(Store.records,{})
+    async def test_write_target_must_be_the_actual_affected_account(self):
+        p=payload('worked')
+        self.assertEqual(self.manager.mutation_target(PAUL,'add',p,ACCOUNT_IDS['Paul']),ACCOUNT_IDS['Paul'])
+        for target in (None,'sensor.unrelated',ACCOUNT_IDS['Maximilian']):
+            with self.subTest(target=target),self.assertRaises(PermissionError):
+                self.manager.mutation_target(PAUL,'add',p,target)
+        await self.manager.mutate(PAUL,0,'add',p)
+        for operation in ('update','approve'):
+            with self.subTest(operation=operation),self.assertRaises(PermissionError):
+                self.manager.mutation_target(VERA,operation,{'id':p['request_id'],'child':'Maximilian'},ACCOUNT_IDS['Maximilian'])
+    async def test_websocket_requires_native_control_of_the_exact_account(self):
+        results=[];errors=[];checked=[]
+        def check(eid,key):checked.append((eid,key));return False
+        user=SimpleNamespace(id='p',is_active=True,is_admin=False,permissions=SimpleNamespace(check_entity=check))
+        connection=SimpleNamespace(user=user,send_error=lambda *a:errors.append(a),send_result=lambda *a:results.append(a))
+        await gm.ws_add(self.hass,connection,{'id':1,'entity_id':ACCOUNT_IDS['Paul'],'revision':0,'entry':payload('worked')})
+        self.assertEqual(checked,[(ACCOUNT_IDS['Paul'],'control')]);self.assertEqual(errors[0][1],'unauthorized')
+        self.assertEqual(Store.records,{});self.assertEqual(results,[])
+    async def test_renamed_accounts_use_the_registry_entity_id(self):
+        self.manager.account_entities['Paul'].entity_id='sensor.pauls_garden_minutes'
+        out=self.manager.snapshot(PAUL)
+        self.assertEqual(out['balances'][0]['entity_id'],'sensor.pauls_garden_minutes')
+        self.assertEqual(self.manager.mutation_target(PAUL,'add',payload('worked'),'sensor.pauls_garden_minutes'),'sensor.pauls_garden_minutes')
+        with self.assertRaises(PermissionError):self.manager.mutation_target(PAUL,'add',payload('worked'),ACCOUNT_IDS['Paul'])
 if __name__=='__main__':unittest.main()

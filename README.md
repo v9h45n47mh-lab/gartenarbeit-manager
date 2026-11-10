@@ -21,7 +21,7 @@ title: Gartenarbeit
 
 Die Kartenressource wird automatisch registriert. Falls der Browser die Karte nach der Erstinstallation noch nicht kennt, die HA-App bzw. den Browser einmal vollständig neu laden.
 
-**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.0.2.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
+**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.0.3.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
 
 ## Kontoregeln
 
@@ -55,15 +55,27 @@ Die Benutzerzuordnung kann ein HA-Administrator unter **Einstellungen → Gerät
 
 ### Access Control
 
-Falls Access Control verwendet wird, für die jeweiligen Benutzer unter **WebSocket commands** zusätzlich erlauben:
+Access Control prüft sowohl die Befehlsfreigabe als auch das konkrete Ziel einer Änderung. **Advanced → Always allow** hebt nur die Befehlssperre auf. Die Meldung **„Request did not say what it would touch“** bedeutet, dass ein Schreibaufruf kein überprüfbares Ziel genannt hat. In Version 1.0.0–1.0.2 reichte die bisher empfohlene Befehlsfreigabe deshalb nicht aus. Ab 1.0.3 nennt jeder Schreibaufruf das tatsächlich betroffene Gartenzeitkonto als HA-Entität; das Backend prüft diese Zuordnung zusätzlich.
+
+Nach dem Update HA neu starten, dann in der jeweiligen Rolle unter **Advanced → Always allow (one pattern per line)** ergänzen bzw. stehen lassen:
 
 ```text
 gartenarbeit_manager/*
 ```
 
-Alternativ einzeln: `gartenarbeit_manager/get`, `/add`, `/update`, `/approve` und `/photo` (jeweils mit vollem Domain-Präfix). Die interne Rollenprüfung bleibt auch mit einer solchen Freigabe wirksam. Bei Kindern kann `/approve` zusätzlich auf der Access-Control-Ebene gesperrt bleiben.
+Zusätzlich eine Entitätsregel mit **Read and control** (Lesen und Bedienen) anlegen:
 
-Die Berechtigung zum Anzeigen oder Bearbeiten des HA-Dashboards wird weiterhin im Dashboard bzw. in Access Control festgelegt. Die Integration regelt ihr eigenes Zeitkonto und erstellt keine global sichtbaren Sensoren mit Buchungsdaten.
+| Rolle | Freizugebende Kontoentität |
+| --- | --- |
+| Maximilian | `sensor.gartenarbeit_maximilian` |
+| Paul | `sensor.gartenarbeit_paul` |
+| Vera / Manuel | Beide Kontoentitäten |
+
+Das sind die standardmäßig vergebenen IDs. Die tatsächlichen IDs unter **Einstellungen → Geräte & Dienste → Gartenarbeit Manager → Entitäten** prüfen, falls sie umbenannt wurden oder bereits gleichnamige Entitäten existieren. Die Kontosensoren müssen aktiviert sein. In Kinderrollen nur das eigene Konto freigeben; vorhandene breitere Freigaben entsprechend prüfen, wenn auch der Kontostand des anderen Kindes verborgen bleiben soll. Danach die Rolle speichern und die HA-Oberfläche beim jeweiligen Benutzer vollständig neu laden. Unter dem Zahnrad muss mindestens Version **1.0.3** stehen.
+
+Alternativ die Befehle einzeln erlauben: `gartenarbeit_manager/get`, `/add`, `/update`, `/approve` und `/photo` (jeweils mit vollem Domain-Präfix). Die Familienrollen bleiben zusätzlich wirksam: Kinder können auch mit Bedienberechtigung weder Elternkorrekturen durchführen noch Gartenarbeit freigeben. Bei Kindern kann `/approve` außerdem auf der Access-Control-Ebene gesperrt bleiben.
+
+Die Berechtigung zum Anzeigen oder Bearbeiten des HA-Dashboards wird weiterhin im Dashboard bzw. in Access Control festgelegt. Die beiden Kontosensoren enthalten ausschließlich den Saldo in Minuten: positiv = offen, negativ = Guthaben. Buchungsbeschreibungen, Fotos und Änderungsverlauf erscheinen dort nicht. Außerhalb eingeschränkter Rollen gelten für die Kontosensoren die normalen HA-Entitätsrechte; die Benutzerzuordnung der Karte allein beschränkt diese nativen Sensoren nicht.
 
 ### Buchungsformular speichert nicht
 
