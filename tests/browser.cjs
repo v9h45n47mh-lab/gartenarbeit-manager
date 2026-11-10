@@ -58,7 +58,7 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
     const addControl=card.locator('.page-actions .program-add');assert.equal(await addControl.textContent(),'+ Buchung');assert.equal(await addControl.locator('svg').count(),0);assert.equal(await addControl.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(3, 169, 244)');
     await page.screenshot({path:path.join(output,`ledger-${width}-${dark?'dark':'light'}.png`),fullPage:true});
     await settings().click();await fit();
-    assert.match(await card.locator('.version-info').innerText(),/Oberfläche 1\.1\.1 · Integration 1\.1\.1 · UI 1\.1\.0/);
+    assert.match(await card.locator('.version-info').innerText(),/Oberfläche 1\.2\.0 · Integration 1\.2\.0 · UI 1\.2\.0/);
     const styles=await settings().evaluate(el=>({width:getComputedStyle(el).width,color:getComputedStyle(el).color,svg:getComputedStyle(el.querySelector('svg')).width,fill:getComputedStyle(el.querySelector('svg')).fill}));
     assert.equal(styles.width,width<=600?'42px':'48px');assert.equal(styles.svg,'24px');assert.equal(styles.color,'rgb(3, 169, 244)');assert.equal(styles.fill,styles.color);
     assert.equal(await card.locator('.row-text strong').first().evaluate(el=>getComputedStyle(el).fontSize),'13px');
@@ -74,7 +74,7 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   let modal=card.getByRole('dialog');await modal.waitFor();console.log('Correction labels:',await modal.locator('label').allTextContents());await modal.getByLabel(/^Kind/).selectOption('Paul');await modal.getByLabel('+ zuweisen / − gutschreiben',{exact:true}).fill('0');await modal.getByLabel('Grund der Korrektur',{exact:true}).fill('Freie Korrektur im Browser');
   assert.equal(await modal.locator('[type=submit]').evaluate(el=>el.form?.id),'gm-booking-form');
   await modal.locator('[type=submit]').click();assert.match(await modal.locator('.form-error').innerText(),/außer 0/);
-  await modal.locator('[data-correction-minutes="-15"]').click();assert.equal(await modal.locator('[name=minutes]').inputValue(),'-15');
+  await modal.locator('[data-ui-preset="-15"]').click();assert.equal(await modal.locator('[name=minutes]').inputValue(),'-15');assert.equal(await modal.locator('.form-error').isVisible(),false);
   await modal.locator('[name=minutes]').fill('-37');await fit();
   for(let i=0;i<10;i++){await page.keyboard.press('Tab');assert.equal(await modal.evaluate(el=>el.contains(el.getRootNode().activeElement)),true,'Focus stays in the kit modal');}
   await page.screenshot({path:path.join(output,'correction-320-dark.png'),fullPage:true});
@@ -90,7 +90,11 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   await settings().click();assert.equal(await card.locator('[data-book=correction]').count(),0);await navigate('ledger');
   await card.locator('[data-book=worked]').click();modal=card.getByRole('dialog');assert.equal(await modal.locator('[name=child]').count(),0);assert.equal(await modal.locator('[name=kind]').count(),0);
   await modal.locator('[name=minutes]').fill('17');await modal.locator('[name=reason]').fill('Neue Gartenarbeit');
-  await modal.locator('[data-file]').setInputFiles({name:'garden.png',mimeType:'image/png',buffer:png});await modal.locator('.photo-preview').waitFor();
+  assert.equal(await modal.locator('[data-ui-photo]').count(),1);assert.equal(await modal.locator('textarea[name=reason]').getAttribute('maxlength'),'500');
+  await modal.locator('[data-ui-photo] input[type=file]').setInputFiles({name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('invalid photo')});await modal.locator('.form-error').filter({hasText:'JPG-, PNG- oder WebP'}).waitFor();assert.equal(await modal.locator('[type=submit]').isEnabled(),true);assert.equal(await modal.locator('.photo-preview').count(),0);
+  await page.evaluate(()=>{window.photoReads=0;const create=URL.createObjectURL.bind(URL);URL.createObjectURL=file=>{window.photoReads++;return create(file);};});
+  await modal.locator('[data-ui-photo] input[type=file]').setInputFiles({name:'garden.png',mimeType:'image/png',buffer:png});await modal.locator('.photo-preview').waitFor();assert.equal(await page.evaluate(()=>window.photoReads),1,'Shared photo is processed exactly once');assert.equal(await modal.locator('.form-error').isVisible(),false);
+  await fit();await page.screenshot({path:path.join(output,'photo-booking-320-dark.png'),fullPage:true});
   await card.evaluate(el=>el.load());assert.equal(await modal.locator('[name=reason]').inputValue(),'Neue Gartenarbeit');
   await fit();await page.screenshot({path:path.join(output,'report-320-dark.png'),fullPage:true});
   await modal.locator('[type=submit]').click();await modal.waitFor({state:'detached'});
@@ -102,7 +106,7 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   await navigate('ledger');assert.match(await card.locator('.balance').filter({hasText:'Maximilian'}).innerText(),/2 min offen/);
   assert.deepEqual(errors,[]);assert.deepEqual(moduleFailures,[]);
   assert.ok(requests.filter(r=>/\/(add|update|approve)$/.test(r.type)).every(r=>r.entity_id?.startsWith('sensor.gartenarbeit_')));
-  fs.writeFileSync(path.join(output,'validation.json'),JSON.stringify({version:'1.1.1',uiKit:'1.1.0',widths:[1100,430,390,375,320],themes:['light','dark'],checked:['real ES modules and static files','shared SVGs and typography','responsive overflow','native form submit','signed correction and presets','child report and edit','photo upload and approval','role denials','adjusted approval','storage failure recovery','open form preservation','keyboard, focus and Escape'],pageErrors:errors},null,2));
+  fs.writeFileSync(path.join(output,'validation.json'),JSON.stringify({version:'1.2.0',uiKit:'1.2.0',widths:[1100,430,390,375,320],themes:['light','dark'],checked:['real ES modules and static files','shared SVGs and typography','responsive overflow','native form submit','signed correction and presets','child report and edit','photo upload and approval','role denials','adjusted approval','storage failure recovery','open form preservation','keyboard, focus and Escape'],pageErrors:errors},null,2));
   completed=true;console.log('Browser checks passed: desktop/mobile 1100/430/390/375/320, light/dark, native forms, real adapter writes, photos, roles, errors and keyboard.');
  }finally{if(page&&!completed){await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});const diagnostic=await page.locator('gartenarbeit-manager-card').evaluate(el=>({markup:el.shadowRoot.innerHTML,tab:el._tab,data:el._data,parent:el._data?.parent})).catch(e=>({error:e.message}));fs.writeFileSync(path.join(output,'failure.json'),JSON.stringify(diagnostic,null,2));console.error('Browser failure diagnostic:',JSON.stringify({tab:diagnostic.tab,parent:diagnostic.parent,entries:diagnostic.data?.entries?.length,markupSaved:'failure.json'}));}if(browser)await browser.close();server.close();lines.close();host.stdin.end();host.kill();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

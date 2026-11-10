@@ -1,5 +1,13 @@
 # Änderungen
 
+## 1.2.0
+
+- HA UI Kit 1.2.0 aus dem gemeinsamen Repository fest eingebunden, einschließlich aktueller Symbole, Farben, Schriften, Abstände und Buttonvarianten.
+- Beschreibung, freie Minuten mit Schnellwerten, Fotoauswahl, Fotovorschau und Bildverkleinerung nutzen jetzt die gemeinsamen Komponenten. Lokale Kopien der Fotostile und Bildverarbeitung entfallen.
+- Gemeinsame Lade-, Leer-, Erfolgs- und Fehlermeldungen sowie Herunterziehen zum Aktualisieren übernommen.
+- Buchungen, freie positive/negative Korrekturen, Fotos, Freigaben, Benutzerrollen und bestehende Sensor-/Label-Berechtigungen bleiben erhalten.
+- Desktop/Mobil (1100/430/390/375/320 px), helle/dunkle Themes, Formularübermittlung, Fotos und Rollen werden vor der Veröffentlichung geprüft.
+
 ## 1.1.1
 
 - Aktuellen HA UI Kit 1.1.0 aus dem gemeinsamen Repository fest eingebunden; Modulpfad, Prüfsummen und Lizenz geprüft.

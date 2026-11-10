@@ -1,6 +1,6 @@
 """Gartenarbeit Manager constants."""
 DOMAIN = "gartenarbeit_manager"
-VERSION = "1.1.1"
+VERSION = "1.2.0"
 TITLE = "Gartenarbeit Manager"
 SIGNAL_UPDATED = DOMAIN + "_updated"
 
