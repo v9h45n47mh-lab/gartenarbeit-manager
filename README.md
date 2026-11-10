@@ -2,7 +2,7 @@
 
 # Gartenarbeit Manager
 
-Lokales Gartenzeitkonto für Home Assistant. Übernimmt die Gartenarbeitslogik der Haushalts-Site: Kinder melden ihre Arbeit, Vera und Manuel prüfen die Minuten und geben sie frei. Die responsive Dashboard-Karte verwendet vollständig den gemeinsamen HA UI Kit 1.2.0 auf Basis des Shutter Managers. Symbole, Farben, Schrift, Abstände, Navigation, Einstellungszeilen, Eingaben und Dialoge kommen aus dessen lokal gebundenen Komponenten und respektieren das aktive HA-Theme einschließlich Dunkelmodus.
+Lokales Gartenzeitkonto für Home Assistant. Übernimmt die Gartenarbeitslogik der Haushalts-Site: Kinder melden ihre Arbeit, Vera und Manuel prüfen die Minuten und geben sie frei. Die responsive Dashboard-Karte verwendet vollständig den gemeinsamen HA UI Kit 1.2.1 auf Basis des Shutter Managers. Symbole, Farben, Schrift, Abstände, Navigation, Einstellungszeilen, Eingaben und Dialoge kommen aus dessen lokal gebundenen Komponenten und respektieren das aktive HA-Theme einschließlich Dunkelmodus.
 
 ## Installation über Marketplace
 
@@ -21,7 +21,7 @@ title: Gartenarbeit
 
 Die Kartenressource wird automatisch registriert. Falls der Browser die Karte nach der Erstinstallation noch nicht kennt, die HA-App bzw. den Browser einmal vollständig neu laden.
 
-**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.2.0.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
+**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.2.1.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
 
 ## Kontoregeln
 
@@ -104,9 +104,9 @@ Die **Logik** wird übernommen. Vorhandene Site-Buchungen und Fotos werden nicht
 
 ## Gemeinsamer HA UI Kit
 
-Gartenarbeit Manager 1.2.0 bindet [HA UI Kit 1.2.0](https://github.com/v9h45n47mh-lab/ha-ui-kit/tree/a3b7a7d3bd3a05a97093b2263c5b6fc7d2c4af50) fest unter `frontend/family-ui/1.2.0/` ein. Die Lock-Datei enthält die Prüfsummen; JavaScript, CSS, Manifest und Lizenz werden mit jeder Installation ausgeliefert. Die HA-Route liefert den gesamten Frontendordner für die relativen Modulimporte aus. Es gibt keinen automatischen Bezug von main/latest und keinen externen Laufzeitaufruf.
+Gartenarbeit Manager 1.2.1 bindet [HA UI Kit 1.2.1](https://github.com/v9h45n47mh-lab/ha-ui-kit/tree/78324b4f971b96ec198647a0ac08fcde1a0073d8) fest unter `frontend/family-ui/1.2.1/` ein. Die Lock-Datei enthält die Prüfsummen; JavaScript, CSS, Manifest und Lizenz werden mit jeder Installation ausgeliefert. Die HA-Route liefert den gesamten Frontendordner für die relativen Modulimporte aus. Es gibt keinen automatischen Bezug von main/latest und keinen externen Laufzeitaufruf.
 
-Unter dem Zahnrad zeigt die Versionszeile Oberfläche, Integration und UI-Version. Nach dem Update HA neu starten und die Oberfläche vollständig neu laden: Erwartet werden **Oberfläche 1.2.0**, **Integration 1.2.0** und **UI 1.2.0**. Die technische Zuordnung und das Prüfverfahren stehen in [UI_KIT.md](UI_KIT.md).
+Unter dem Zahnrad zeigt die Versionszeile Oberfläche, Integration und UI-Version. Nach dem Update HA neu starten und die Oberfläche vollständig neu laden: Erwartet werden **Oberfläche 1.2.1**, **Integration 1.2.1** und **UI 1.2.1**. Alle Gestaltungsregeln kommen unverändert aus dem Kit; es gibt keine lokalen CSS-Überschreibungen. Die technische Zuordnung und der direkte Stilvergleich stehen in [UI_KIT.md](UI_KIT.md).
 
 ## Marketplace-Logo
 

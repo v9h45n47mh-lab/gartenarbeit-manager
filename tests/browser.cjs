@@ -1,6 +1,7 @@
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {spawn}=require('node:child_process'),{createInterface}=require('node:readline'),{randomUUID}=require('node:crypto');
+const {prepareKitReference,assertKitParity,listPairs,formPairs}=require('./ui_parity.cjs');
 const root=path.resolve(__dirname,'..'),frontend=path.join(root,'custom_components/gartenarbeit_manager/frontend');
 const output=path.join(root,'test-results');fs.mkdirSync(output,{recursive:true});
 const host=spawn(process.env.PYTHON||'python3',['-u',path.join(__dirname,'booking_host.py')],{stdio:['pipe','pipe','inherit']});
@@ -43,22 +44,25 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   const card=page.locator('gartenarbeit-manager-card');
   await card.locator('.balance').nth(1).waitFor();
+  await prepareKitReference(page,'data:image/png;base64,'+png.toString('base64'));
   assert.equal(await card.locator('ha-icon').count(),0,'All UI actions use kit SVGs');
   const settings=()=>card.getByRole('button',{name:'Einstellungen',exact:true});
   const navigate=pageId=>card.locator(`[data-action="navigate"][data-page="${pageId}"]`).click();
   async function fit(){
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'The page must fit horizontally');
-   const bad=await card.evaluate(el=>[...el.shadowRoot.querySelectorAll('.card-top,main,.setting-row,.settings-heading-row,.modal[open],.modal[open] .modal-body')].filter(n=>n.getClientRects().length&&n.scrollWidth>n.clientWidth+1).map(n=>({class:n.className,width:n.clientWidth,scroll:n.scrollWidth})));
+   const bad=await card.evaluate(el=>[...el.shadowRoot.querySelectorAll('.card-top,main,.setting-row,.settings-heading-row,.daily-history-row,.modal[open],.modal[open] .modal-body')].filter(n=>n.getClientRects().length&&n.scrollWidth>n.clientWidth+1).map(n=>({class:n.className,width:n.clientWidth,scroll:n.scrollWidth})));
    assert.deepEqual(bad,[],'Common components must fit horizontally');
   }
   for(const dark of [false,true]){
    if(dark)await page.locator('#theme').click();
    for(const width of [1100,430,390,375,320]){
     await page.setViewportSize({width,height:1000});await navigate('ledger');await fit();
+    const longEntry=card.locator('.entry').filter({hasText:'Unkraut <img'}).locator('[data-ui=collapse]').first();if(await longEntry.getAttribute('aria-expanded')==='false')await longEntry.click();await fit();
+    await assertKitParity(page,listPairs,`booking list ${width}px ${dark?'dark':'light'}`);
     const addControl=card.locator('.page-actions .program-add');assert.equal(await addControl.textContent(),'+ Buchung');assert.equal(await addControl.locator('svg').count(),0);assert.equal(await addControl.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(3, 169, 244)');
     await page.screenshot({path:path.join(output,`ledger-${width}-${dark?'dark':'light'}.png`),fullPage:true});
     await settings().click();await fit();
-    assert.match(await card.locator('.version-info').innerText(),/Oberfläche 1\.2\.0 · Integration 1\.2\.0 · UI 1\.2\.0/);
+    assert.match(await card.locator('.version-info').innerText(),/Oberfläche 1\.2\.1 · Integration 1\.2\.1 · UI 1\.2\.1/);
     const styles=await settings().evaluate(el=>({width:getComputedStyle(el).width,color:getComputedStyle(el).color,svg:getComputedStyle(el.querySelector('svg')).width,fill:getComputedStyle(el.querySelector('svg')).fill}));
     assert.equal(styles.width,width<=600?'42px':'48px');assert.equal(styles.svg,'24px');assert.equal(styles.color,'rgb(3, 169, 244)');assert.equal(styles.fill,styles.color);
     assert.equal(await card.locator('.row-text strong').first().evaluate(el=>getComputedStyle(el).fontSize),'13px');
@@ -76,6 +80,13 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   await modal.locator('[type=submit]').click();assert.match(await modal.locator('.form-error').innerText(),/außer 0/);
   await modal.locator('[data-ui-preset="-15"]').click();assert.equal(await modal.locator('[name=minutes]').inputValue(),'-15');assert.equal(await modal.locator('.form-error').isVisible(),false);
   await modal.locator('[name=minutes]').fill('-37');await fit();
+  for(const dark of [false,true]){
+    await page.evaluate(dark=>document.body.classList.toggle('dark',dark),dark);
+    for(const width of [1100,390,320]){
+      await page.setViewportSize({width,height:1000});await fit();await assertKitParity(page,formPairs,`correction form ${width}px ${dark?'dark':'light'}`);
+      await page.screenshot({path:path.join(output,`correction-${width}-${dark?'dark':'light'}.png`),fullPage:true});
+    }
+  }
   for(let i=0;i<10;i++){await page.keyboard.press('Tab');assert.equal(await modal.evaluate(el=>el.contains(el.getRootNode().activeElement)),true,'Focus stays in the kit modal');}
   await page.screenshot({path:path.join(output,'correction-320-dark.png'),fullPage:true});
   await modal.locator('[type=submit]').click();await modal.waitFor({state:'detached'});
@@ -94,11 +105,28 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   await modal.locator('[data-ui-photo] input[type=file]').setInputFiles({name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('invalid photo')});await modal.locator('.form-error').filter({hasText:'JPG-, PNG- oder WebP'}).waitFor();assert.equal(await modal.locator('[type=submit]').isEnabled(),true);assert.equal(await modal.locator('.photo-preview').count(),0);
   await page.evaluate(()=>{window.photoReads=0;const create=URL.createObjectURL.bind(URL);URL.createObjectURL=file=>{window.photoReads++;return create(file);};});
   await modal.locator('[data-ui-photo] input[type=file]').setInputFiles({name:'garden.png',mimeType:'image/png',buffer:png});await modal.locator('.photo-preview').waitFor();assert.equal(await page.evaluate(()=>window.photoReads),1,'Shared photo is processed exactly once');assert.equal(await modal.locator('.form-error').isVisible(),false);
+  for(const dark of [false,true]){
+    await page.evaluate(dark=>document.body.classList.toggle('dark',dark),dark);
+    for(const width of [1100,320]){
+      await page.setViewportSize({width,height:1000});await fit();await assertKitParity(page,[...formPairs.filter(([s])=>!s.includes('select')&&!s.includes('presets')),['dialog .photo-preview']],`report/photo ${width}px ${dark?'dark':'light'}`);
+      await page.screenshot({path:path.join(output,`photo-booking-${width}-${dark?'dark':'light'}.png`),fullPage:true});
+    }
+  }
   await fit();await page.screenshot({path:path.join(output,'photo-booking-320-dark.png'),fullPage:true});
   await card.evaluate(el=>el.load());assert.equal(await modal.locator('[name=reason]').inputValue(),'Neue Gartenarbeit');
   await fit();await page.screenshot({path:path.join(output,'report-320-dark.png'),fullPage:true});
   await modal.locator('[type=submit]').click();await modal.waitFor({state:'detached'});
-  let work=card.locator('.entry').filter({hasText:'Neue Gartenarbeit'});await work.waitFor();await work.locator('[data-ui=collapse]').first().click();await work.getByRole('button',{name:'Bearbeiten',exact:true}).click();modal=card.getByRole('dialog');assert.equal(await modal.locator('[name=minutes]').inputValue(),'17');await modal.locator('[name=minutes]').fill('19');await modal.locator('[type=submit]').click();await modal.waitFor({state:'detached'});
+  let work=card.locator('.entry').filter({hasText:'Neue Gartenarbeit'});await work.waitFor();await work.locator('[data-ui=collapse]').first().click();
+  const photoOpener=work.getByRole('button',{name:'Foto',exact:true});await photoOpener.click();modal=card.getByRole('dialog');await modal.locator('.gm-photo-large').waitFor();assert.equal(await modal.locator('form').count(),0,'The large photo uses the shared photo dialog');
+  for(const dark of [false,true]){
+    await page.evaluate(dark=>document.body.classList.toggle('dark',dark),dark);
+    for(const width of [1100,390,320]){
+      await page.setViewportSize({width,height:1000});await fit();await assertKitParity(page,[['dialog .modal-head','#reference-large .modal-head'],['dialog .modal-head h3','#reference-large .modal-head h3'],['dialog .modal-body','#reference-large .modal-body'],['dialog .gm-photo-large','#reference-large .gm-photo-large'],['dialog footer','#reference-large footer']],`large photo ${width}px ${dark?'dark':'light'}`);
+      await page.screenshot({path:path.join(output,`photo-large-${width}-${dark?'dark':'light'}.png`),fullPage:true});
+    }
+  }
+  await page.keyboard.press('Escape');await modal.waitFor({state:'detached'});assert.equal(await photoOpener.evaluate(el=>el.getRootNode().activeElement===el),true,'The large photo returns focus to its opener');
+  await work.getByRole('button',{name:'Bearbeiten',exact:true}).click();modal=card.getByRole('dialog');assert.equal(await modal.locator('[name=minutes]').inputValue(),'17');await modal.locator('[name=minutes]').fill('19');await modal.locator('[type=submit]').click();await modal.waitFor({state:'detached'});
   await assert.rejects(()=>rpc('max',{type:'gartenarbeit_manager/add',entity_id:'sensor.gartenarbeit_paul',revision:999,entry:{request_id:randomUUID(),child:'Paul',kind:'worked',minutes:5,date:'2026-11-10',reason:'Foreign account'}}));
   const maxSnapshot=await rpc('max',{type:'gartenarbeit_manager/get'});await assert.rejects(()=>rpc('max',{type:'gartenarbeit_manager/add',entity_id:'sensor.gartenarbeit_maximilian',revision:maxSnapshot.revision,entry:{request_id:randomUUID(),child:'Maximilian',kind:'correction',minutes:-5,date:'2026-11-10',reason:'Forbidden correction'}}));
   // Parent approves adjusted minutes and can still view the uploaded photo.
@@ -106,7 +134,7 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   await navigate('ledger');assert.match(await card.locator('.balance').filter({hasText:'Maximilian'}).innerText(),/2 min offen/);
   assert.deepEqual(errors,[]);assert.deepEqual(moduleFailures,[]);
   assert.ok(requests.filter(r=>/\/(add|update|approve)$/.test(r.type)).every(r=>r.entity_id?.startsWith('sensor.gartenarbeit_')));
-  fs.writeFileSync(path.join(output,'validation.json'),JSON.stringify({version:'1.2.0',uiKit:'1.2.0',widths:[1100,430,390,375,320],themes:['light','dark'],checked:['real ES modules and static files','shared SVGs and typography','responsive overflow','native form submit','signed correction and presets','child report and edit','photo upload and approval','role denials','adjusted approval','storage failure recovery','open form preservation','keyboard, focus and Escape'],pageErrors:errors},null,2));
+  fs.writeFileSync(path.join(output,'validation.json'),JSON.stringify({version:'1.2.1',uiKit:'1.2.1',widths:[1100,430,390,375,320],themes:['light','dark'],checked:['real ES modules and static files','computed style parity with untouched kit components','shared booking list and audit history','shared grid forms, buttons and dialogs','shared photo picker, preview and large dialog','responsive overflow','native form submit','signed correction and presets','child report and edit','photo upload and approval','role denials','adjusted approval','storage failure recovery','open form preservation','keyboard, focus and Escape'],pageErrors:errors},null,2));
   completed=true;console.log('Browser checks passed: desktop/mobile 1100/430/390/375/320, light/dark, native forms, real adapter writes, photos, roles, errors and keyboard.');
  }finally{if(page&&!completed){await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});const diagnostic=await page.locator('gartenarbeit-manager-card').evaluate(el=>({markup:el.shadowRoot.innerHTML,tab:el._tab,data:el._data,parent:el._data?.parent})).catch(e=>({error:e.message}));fs.writeFileSync(path.join(output,'failure.json'),JSON.stringify(diagnostic,null,2));console.error('Browser failure diagnostic:',JSON.stringify({tab:diagnostic.tab,parent:diagnostic.parent,entries:diagnostic.data?.entries?.length,markupSaved:'failure.json'}));}if(browser)await browser.close();server.close();lines.close();host.stdin.end();host.kill();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

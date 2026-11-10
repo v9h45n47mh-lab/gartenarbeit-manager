@@ -1,18 +1,19 @@
-/* Gartenarbeit Manager 1.2.0 — pinned, locally bundled HA UI Kit. */
+/* Gartenarbeit Manager 1.2.1 — pinned, locally bundled HA UI Kit. */
 import {
   UI_CSS, UI_VERSION, escapeHtml as gmEsc, button, iconButton, navigation, programAddButton,
   section, row, field, selectField, dialog as uiDialog, notice, versionInfo, bindUI,
-  textareaField, numberControl, photoPicker, photoPreview, compressPhoto,
+  textareaField, numberControl, photoPicker, photoPreview, photoDialog, compressPhoto,
   emptyState, loadingState, feedback, formError, bindGestures,
-} from './family-ui/1.2.0/family-ui.js';
+  historyList, counter, statusBadge,
+} from './family-ui/1.2.1/family-ui.js';
 
-const GM_VERSION='1.2.0';
+const GM_VERSION='1.2.1';
 // getRandomValues also works on local HTTP origins, where randomUUID is unavailable.
 const gmRequestId=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const hex=Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('');return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;};
 const gmDate=day=>new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(day+'T12:00:00'));
 const gmTime=value=>new Intl.DateTimeFormat('de-DE',{dateStyle:'short',timeStyle:'short'}).format(new Date(value));
-// Domain arrangement only. Shared controls, icons, colours and typography use UI_CSS unchanged.
-const GM_LAYOUT=`.gm-form{display:grid;gap:16px}.gm-balance-value{white-space:nowrap}.gm-entry-content{overflow-wrap:anywhere}`;
+const gmClock=value=>new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit'}).format(new Date(value));
+const gmFull=content=>`<div class="full">${content}</div>`;
 function gmField({name,...options}) {
   return field({id:`gm-${name}`,name,...options});
 }
@@ -57,7 +58,7 @@ class GartenarbeitManagerCard extends HTMLElement {
   }
   block(props){return section({...props,expanded:this._folds.get(props.id)??props.expanded??true});}
   balances() {
-    const content=this._data.balances.map(b=>row({title:b.child,description:`Zugewiesen ${b.assigned} · Erledigt ${b.worked}${b.corrections?` · Korrektur ${b.corrections>0?'+':''}${b.corrections} min`:''}${b.pending?` · ${b.pending} min warten auf Freigabe`:''}`,trailing:`<span class="amount gm-balance-value ${b.remaining<0?'credit':''}">${Math.abs(b.remaining)} min ${b.remaining<0?'Guthaben':'offen'}</span>`}).replace('class="setting-row"','class="setting-row balance"')).join('');
+    const content=this._data.balances.map(b=>row({title:b.child,description:`Zugewiesen ${b.assigned} · Erledigt ${b.worked}${b.corrections?` · Korrektur ${b.corrections>0?'+':''}${b.corrections} min`:''}${b.pending?` · ${b.pending} min warten auf Freigabe`:''}`,trailing:statusBadge({label:`${Math.abs(b.remaining)} min ${b.remaining<0?'Guthaben':'offen'}`,state:b.remaining<0?'success':'neutral'})}).replace('class="setting-row"','class="setting-row balance"')).join('');
     return this.block({id:'gm-balances',title:this._data.balances.length===1?'Dein Zeitkonto':'Zeitkonten',content}).replace('class="settings-group"','class="settings-group balances"');
   }
   entries() {
@@ -69,12 +70,13 @@ class GartenarbeitManagerCard extends HTMLElement {
       const pending=r.review_status==='pending',label=r.kind==='worked'?(pending?'Gemeldet':'Freigegeben'):r.kind==='correction'?'Korrektur':'Zugewiesen';
       const actions=(r.can_approve?iconButton({icon:'success',label:'Prüfen & freigeben',action:'review',data:{review:r.id}}):'')+(r.photo?gmButton('Foto','photo',{photo:r.id}):'')+(r.can_edit?iconButton({icon:'edit',label:'Bearbeiten',action:'edit',data:{edit:r.id}}):'');
       let content=row({title:label,description:`${d.parent?r.child+' · ':''}${gmDate(r.date)}`,trailing:actions});
-      content+=row({title:`Erfasst von ${r.actor_name}`,description:gmTime(r.created_at)});
+      const events=[{time:gmClock(r.created_at),datetime:r.created_at,title:`Erfasst von ${r.actor_name}`,description:gmTime(r.created_at),status:pending?'pending':'success',result:label}];
+      if(r.reviewed_by)events.push({time:gmClock(r.reviewed_at),datetime:r.reviewed_at,title:`Freigegeben von ${r.reviewed_by}`,description:gmTime(r.reviewed_at),status:'success',result:'Verrechnet'});
+      content+=historyList({entries:events});
       if(pending)content+=notice('Wartet auf Freigabe; noch nicht im Zeitkonto verrechnet.');
-      if(r.reviewed_by)content+=row({title:`Freigegeben von ${r.reviewed_by}`,description:gmTime(r.reviewed_at)});
       if(r.reported_minutes!=null)content+=row({title:`Gemeldet: ${r.reported_minutes} Minuten`,description:pending?'Wartet auf Prüfung':`Angerechnet: ${-r.minutes} Minuten`});
-      if(r.history?.length)content+=this.block({id:`gm-history-${r.id}`,title:`Änderungsverlauf (${r.history.length})`,expanded:false,content:r.history.map(h=>row({title:`${h.action==='approved'?'Freigegeben':'Bearbeitet'} von ${h.by}`,description:`${gmTime(h.at)} · Vorher: ${h.before.minutes} min · ${gmDate(h.before.date)} · ${h.before.reason}`})).join('')});
-      return this.block({id:`gm-entry-${r.id}`,title:r.reason,expanded:false,trailing:`<small class="minutes">${pending?Math.abs(r.minutes):(r.minutes>0?'+':'')+r.minutes} min</small>`,content:`<div class="gm-entry-content">${content}</div>`}).replace('class="settings-group"',`class="settings-group entry" data-row="${gmEsc(r.id)}"`);
+      if(r.history?.length)content+=this.block({id:`gm-history-${r.id}`,title:'Änderungsverlauf',trailing:counter(r.history.length,'Änderungen'),expanded:false,content:historyList({entries:r.history.map(h=>({time:gmClock(h.at),datetime:h.at,title:`${h.action==='approved'?'Freigegeben':'Bearbeitet'} von ${h.by}`,description:`${gmTime(h.at)} · Vorher: ${h.before.minutes} min · ${gmDate(h.before.date)} · ${h.before.reason}`,status:'success',result:h.action==='approved'?'Freigegeben':'Bearbeitet'}))})});
+      return this.block({id:`gm-entry-${r.id}`,title:r.reason,expanded:false,trailing:counter(`${pending?Math.abs(r.minutes):(r.minutes>0?'+':'')+r.minutes} min`),content}).replace('class="settings-group"',`class="settings-group entry" data-row="${gmEsc(r.id)}"`);
     }).join('')+(entries.length>count?gmButton(`Weitere ${Math.min(100,entries.length-count)} Buchungen anzeigen`,'more'):'');
   }
   settings() {
@@ -98,14 +100,16 @@ class GartenarbeitManagerCard extends HTMLElement {
       if(filters)content+=`<div class="grid">${filters}</div>`;
       content+=this.entries();
     }
-    this.shadowRoot.innerHTML=`<style>${UI_CSS}\n${GM_LAYOUT}</style><ha-card>${navigation({label:title,items,active:this._tab,settings:!!d,help:false})}<main>${content}</main></ha-card><div class="dialog-host"></div>`;
+    this.shadowRoot.innerHTML=`<style>${UI_CSS}</style><ha-card>${navigation({label:title,items,active:this._tab,settings:!!d,help:false})}<main>${content}</main></ha-card><div class="dialog-host"></div>`;
     this.shadowRoot.querySelector('[data-filter]')?.addEventListener('change',e=>{this._filter=e.target.value;this._visibleCount=100;this.render();});
     this.shadowRoot.querySelector('[data-status]')?.addEventListener('change',e=>{this._status=e.target.value;this._visibleCount=100;this.render();});
   }
   dialog(title,body,submit='Speichern') {
-    const host=this.shadowRoot.querySelector('.dialog-host');
     const save=gmButton(submit,'submit',{}, {variant:'primary',icon:'save'}).replace('type="button"','type="submit" form="gm-booking-form"');
-    host.innerHTML=uiDialog({id:'gm-dialog',title,content:`<form id="gm-booking-form" class="gm-form">${body}${formError('').replace('class="modal-save-error"','class="modal-save-error form-error"')}</form>`,actions:gmButton('Abbrechen','cancel',{'cancel':'true'})+save});
+    return this.mountDialog(uiDialog({id:'gm-dialog',title,content:`<form id="gm-booking-form" class="grid">${body}${formError('').replace('class="modal-save-error"','class="modal-save-error form-error full"')}</form>`,actions:gmButton('Abbrechen','cancel',{'cancel':'true'})+save}));
+  }
+  mountDialog(markup) {
+    const host=this.shadowRoot.querySelector('.dialog-host');host.innerHTML=markup;
     const dialog=host.querySelector('dialog');
     dialog.addEventListener('cancel',e=>{if(this._busy)e.preventDefault();});
     dialog.addEventListener('close',()=>host.replaceChildren());
@@ -116,9 +120,14 @@ class GartenarbeitManagerCard extends HTMLElement {
   async photo(eid){const result=await this._hass.callWS({type:'gartenarbeit_manager/photo',entry_id:eid});if(!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(result.photo))throw new Error('Ungültiges Foto.');return result.photo;}
   async showPhoto(eid) {
     if(this._busy)return;const seq=this._seq;
-    const dialog=this.dialog('Foto zur Gartenarbeit',loadingState('Foto wird geladen …'));dialog.querySelector('footer').remove();
-    try{const photo=await this.photo(eid);if(seq!==this._seq||!dialog.isConnected||!dialog.open)return;dialog.querySelector('form').innerHTML=photoPreview({src:photo,alt:'Foto zur Gartenarbeit',large:true});}
-    catch(e){if(seq===this._seq&&dialog.isConnected)dialog.querySelector('form').innerHTML=feedback(e.message||'Foto konnte nicht geladen werden.',{kind:'error'});}
+    const dialog=this.mountDialog(uiDialog({id:'gm-dialog',title:'Foto zur Gartenarbeit',content:loadingState('Foto wird geladen …')}));
+    try{
+      const photo=await this.photo(eid);if(seq!==this._seq||!dialog.isConnected||!dialog.open)return;
+      const template=document.createElement('template');template.innerHTML=photoDialog({id:dialog.id,title:'Foto zur Gartenarbeit',src:photo,alt:'Foto zur Gartenarbeit'});
+      // Retain the open native dialog and its opener while taking all contents from photoDialog.
+      dialog.replaceChildren(...template.content.firstElementChild.childNodes);dialog.querySelector('[data-ui="close-dialog"]').focus();
+    }
+    catch(e){if(seq===this._seq&&dialog.isConnected)dialog.querySelector('.modal-body').innerHTML=feedback(e.message||'Foto konnte nicht geladen werden.',{kind:'error'});}
   }
   edit(existing=null,kind=null) {
     const d=this._data;if(!d||existing&&!existing.can_edit)return;
@@ -131,7 +140,7 @@ class GartenarbeitManagerCard extends HTMLElement {
     };
     const identity=existing?`<p class="hint">${gmEsc(value.child)} · ${value.kind==='worked'?'Gartenarbeit':value.kind==='correction'?'Korrektur':'Zuweisung'}<br>Kind und Buchungsart bleiben erhalten.</p>`:d.parent?`<div class="grid">${gmSelect({name:'child',label:'Kind',value:value.child,options:d.balances.map(b=>({value:b.child,label:b.child}))})}${gmSelect({name:'kind',label:'Buchungsart',value:value.kind,options:[{value:'assigned',label:'Zuweisung'},{value:'correction',label:'Korrektur'}]})}</div>`:`<p class="hint">Gartenarbeit für ${gmEsc(d.person)} melden.</p>`;
     const reasonLabel=value.kind==='worked'?'Was hast du gemacht?':value.kind==='correction'?'Grund der Korrektur':'Warum gibt es Gartenarbeit?';
-    const body=identity+`<div class="grid"><div data-minute-input>${choices(value.kind)}</div>${gmField({name:'date',label:'Datum',type:'date',required:true,min:'2020-01-01',max:d.today,value:value.date})}</div>`+textareaField({id:'gm-reason',name:'reason',label:reasonLabel,value:value.reason,required:true,maxLength:500,rows:3})+photoPicker({id:'gm-photo'})+(value.kind==='worked'?'<p class="hint">Die Minuten zählen erst nach Freigabe durch Vera oder Manuel.</p>':'');
+    const body=gmFull(identity)+gmFull(`<div class="grid"><div data-minute-input>${choices(value.kind)}</div>${gmField({name:'date',label:'Datum',type:'date',required:true,min:'2020-01-01',max:d.today,value:value.date})}</div>`)+gmFull(textareaField({id:'gm-reason',name:'reason',label:reasonLabel,value:value.reason,required:true,maxLength:500,rows:3}))+gmFull(photoPicker({id:'gm-photo'}))+(value.kind==='worked'?'<p class="hint full">Die Minuten zählen erst nach Freigabe durch Vera oder Manuel.</p>':'');
     const dialog=this.dialog(existing?'Eintrag bearbeiten':value.kind==='worked'?'Gartenarbeit melden':'Gartenzeit buchen',body,existing?'Änderungen speichern':value.kind==='worked'?'Zur Freigabe melden':'Buchung speichern');
     const form=dialog.querySelector('form'),input=name=>form.querySelector(`[name="${name}"]`),requestId=existing?null:gmRequestId();
     let photoChanged=false,photoValue=null,processing=false;
@@ -155,7 +164,7 @@ class GartenarbeitManagerCard extends HTMLElement {
   }
   review(existing) {
     if(!existing?.can_approve)return;const revision=this._data.revision;
-    const body=row({title:`${existing.child} · ${existing.reason}`,description:`${gmDate(existing.date)} · Gemeldet: ${existing.reported_minutes??-existing.minutes} Minuten`})+gmField({name:'minutes',label:'Anrechenbare Minuten',type:'number',min:1,max:1440,step:1,required:true,value:-existing.minutes})+'<p class="hint">Erst mit dieser Freigabe werden die Minuten vom offenen Zeitkonto abgezogen. Übererfüllung bleibt als Guthaben erhalten.</p>'+(existing.photo?gmButton('Foto ansehen','review-photo',{'review-photo':'true'})+'<div data-review-preview></div>':'');
+    const body=gmFull(row({title:`${existing.child} · ${existing.reason}`,description:`${gmDate(existing.date)} · Gemeldet: ${existing.reported_minutes??-existing.minutes} Minuten`}))+gmFull(gmField({name:'minutes',label:'Anrechenbare Minuten',type:'number',min:1,max:1440,step:1,required:true,value:-existing.minutes}))+'<p class="hint full">Erst mit dieser Freigabe werden die Minuten vom offenen Zeitkonto abgezogen. Übererfüllung bleibt als Guthaben erhalten.</p>'+(existing.photo?gmFull(gmButton('Foto ansehen','review-photo',{'review-photo':'true'})+'<div data-review-preview></div>'):'');
     const dialog=this.dialog('Gartenarbeit freigeben',body,'Minuten freigeben'),form=dialog.querySelector('form');
     form.querySelector('[data-review-photo]')?.addEventListener('click',async e=>{const control=e.currentTarget;control.disabled=true;try{const photo=await this.photo(existing.id);if(!dialog.isConnected)return;form.querySelector('[data-review-preview]').innerHTML=photoPreview({src:photo,alt:'Gemeldete Gartenarbeit'});}catch(err){this.setFormError(err.message,form);}finally{control.disabled=false;}});
     form.onsubmit=e=>{e.preventDefault();return this.mutate('approve',{id:existing.id,minutes:Number(form.querySelector('[name="minutes"]').value)},revision);};

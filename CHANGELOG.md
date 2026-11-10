@@ -1,5 +1,13 @@
 # Änderungen
 
+## 1.2.1
+
+- Gestaltung vollständig aus HA UI Kit 1.2.1: Alle lokalen CSS-Regeln entfernt. Formularraster, Schrift, Farben, Abstände, Einrückungen und Symbole kommen unverändert aus dem Kit.
+- Buchungslisten und Änderungsverlauf verwenden gemeinsame Abschnitte, Zeilen, Verlaufslisten, Zähler und Kontostatus. Bestehende Filter und aufklappbare Buchungsdetails bleiben erhalten.
+- Foto-Großansicht auf den gemeinsamen `photoDialog` umgestellt; Fotoauswahl, Vorschau, Verkleinerung und Buchungsdialoge verwenden ebenfalls die gemeinsamen Komponenten.
+- Direkter Vergleich der berechneten Schrift-, Farb-, Abstands- und Symbolstile mit unberührten Referenzkomponenten in Desktop-/Mobilansichten und hellen/dunklen Themes ergänzt. Buchungslisten, Korrekturformulare, Fotovorschau und Großansicht werden ausdrücklich geprüft.
+- Buchungen, freie positive/negative Korrekturen, Freigaben, Fotos, Rollen und native Konto-/Label-Berechtigungen beibehalten.
+
 ## 1.2.0
 
 - HA UI Kit 1.2.0 aus dem gemeinsamen Repository fest eingebunden, einschließlich aktueller Symbole, Farben, Schriften, Abstände und Buttonvarianten.
