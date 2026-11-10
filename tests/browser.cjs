@@ -90,7 +90,7 @@ async function seed(user,kind,child,minutes,reason,photo=null){await rpc(user,{t
   await card.locator('[data-book=worked]').click();modal=card.getByRole('dialog');assert.equal(await modal.locator('[name=child]').count(),0);assert.equal(await modal.locator('[name=kind]').count(),0);
   await modal.locator('[name=minutes]').fill('17');await modal.locator('[name=reason]').fill('Neue Gartenarbeit');
   await modal.locator('[data-file]').setInputFiles({name:'garden.png',mimeType:'image/png',buffer:png});await modal.locator('.photo-preview').waitFor();
-  await page.locator('#refresh-test').click();assert.equal(await modal.locator('[name=reason]').inputValue(),'Neue Gartenarbeit');
+  await card.evaluate(el=>el.load());assert.equal(await modal.locator('[name=reason]').inputValue(),'Neue Gartenarbeit');
   await fit();await page.screenshot({path:path.join(output,'report-320-dark.png'),fullPage:true});
   await modal.locator('[type=submit]').click();await modal.waitFor({state:'detached'});
   let work=card.locator('.entry').filter({hasText:'Neue Gartenarbeit'});await work.waitFor();await work.locator('[data-ui=collapse]').first().click();await work.getByRole('button',{name:'Bearbeiten',exact:true}).click();modal=card.getByRole('dialog');assert.equal(await modal.locator('[name=minutes]').inputValue(),'17');await modal.locator('[name=minutes]').fill('19');await modal.locator('[type=submit]').click();await modal.waitFor({state:'detached'});
