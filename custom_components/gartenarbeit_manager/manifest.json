@@ -1,6 +1,9 @@
 {
   "domain": "gartenarbeit_manager",
   "name": "Gartenarbeit Manager",
+  "after_dependencies": [
+    "family_access_manager"
+  ],
   "codeowners": [
     "@v9h45n47mh-lab"
   ],
@@ -14,8 +17,5 @@
   "integration_type": "service",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/v9h45n47mh-lab/gartenarbeit-manager/issues",
-  "version": "1.4.0",
-  "after_dependencies": [
-    "family_access_manager"
-  ]
+  "version": "1.4.0"
 }
