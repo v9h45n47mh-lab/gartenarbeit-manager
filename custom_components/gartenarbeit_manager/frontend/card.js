@@ -1,4 +1,4 @@
-/* Gartenarbeit Manager 1.3.1 — pinned, locally bundled HA UI Kit. */
+/* Gartenarbeit Manager 1.4.0 — pinned, locally bundled HA UI Kit. */
 import {
   UI_CSS, UI_VERSION, escapeHtml as gmEsc, button, iconButton, navigation, programAddButton,
   section, row, field, selectField, dialog as uiDialog, notice, versionInfo, bindUI,
@@ -7,7 +7,7 @@ import {
   historyList, counter, accountTile, accountTiles,
 } from './family-ui/1.3.1/family-ui.js';
 
-const GM_VERSION='1.3.1';
+const GM_VERSION='1.4.0';
 // getRandomValues also works on local HTTP origins, where randomUUID is unavailable.
 const gmRequestId=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const hex=Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('');return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;};
 const gmDate=day=>new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(day+'T12:00:00'));
@@ -87,7 +87,7 @@ class GartenarbeitManagerCard extends HTMLElement {
   settings() {
     let account=row({title:'Offene Minuten und Guthaben',description:'Positive Werte sind offene Gartenminuten. Negative Werte sind Guthaben. Gemeldete Arbeit zählt erst nach Freigabe.'});
     if(this._data.parent){account+=row({title:'Gartenzeit zuweisen',description:'5, 10 oder 15 Minuten',trailing:iconButton({icon:'add',label:'Gartenzeit zuweisen',action:'book',data:{book:'assigned'}})});account+=row({title:'Zeitkonto korrigieren',description:'Freie positive oder negative Minuten',trailing:iconButton({icon:'edit',label:'Zeitkonto korrigieren',action:'book',data:{book:'correction'}})});}
-    const users=row({title:`Angemeldet als ${this._data.person}`,description:this._data.parent?'Vera und Manuel dürfen zuweisen, korrigieren, bearbeiten und freigeben.':'Du siehst dein eigenes Zeitkonto und kannst eigene Meldungen bis zur Freigabe bearbeiten.'})+row({title:'Benutzerzuordnung',description:'Als HA-Administrator unter Einstellungen → Geräte & Dienste → Gartenarbeit Manager → Konfigurieren ändern.'});
+    const users=row({title:`Angemeldet als ${this._data.person}`,description:this._data.parent?'Deine Rolle darf zuweisen, korrigieren, bearbeiten und freigeben.':'Du siehst dein eigenes Zeitkonto und kannst eigene Meldungen bis zur Freigabe bearbeiten.'})+row({title:'Personenzuordnung',description:'Personen werden in Geräte & Dienste zugeordnet. Rechte werden je Rolle in Family Access → Gartenarbeit verwaltet.'});
     return this.block({id:'gm-account-settings',title:'Zeitkonto',content:account})+this.block({id:'gm-users-settings',title:'Benutzer & Rechte',content:users})+versionInfo({frontend:GM_VERSION,backend:this._data.version,ui:UI_VERSION});
   }
   render() {
@@ -97,7 +97,7 @@ class GartenarbeitManagerCard extends HTMLElement {
     const items=[{id:'ledger',label:'Zeitkonto'},...(d?.parent?[{id:'approvals',label:`Freigaben${pending?` (${pending})`:''}`}]:[])];
     let content=this._error?feedback(this._error,{kind:'error'})+gmButton('Erneut laden','retry'):'';
     if(this._notice)content+=feedback(this._notice,{kind:'success'});
-    if(!d)content+=this._error?emptyState('Bitte Benutzerzuordnung und gegebenenfalls Access Control prüfen.'):loadingState('Gartenzeitkonto wird geladen …');
+    if(!d)content+=this._error?emptyState('Bitte Personenzuordnung und gegebenenfalls Access Control prüfen.'):loadingState('Gartenzeitkonto wird geladen …');
     else if(this._tab==='settings')content+=this.settings();
     else {
       content+=`<div class="page-actions"><h3>${gmEsc(title)}</h3>${this._tab==='ledger'?programAddButton({label:d.parent?'Buchung':'Gartenarbeit',action:'book',data:{book:d.parent?'assigned':'worked'}}):''}</div>${this.balances()}`;

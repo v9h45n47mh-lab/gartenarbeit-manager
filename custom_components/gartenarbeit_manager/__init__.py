@@ -19,6 +19,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, SIGNAL_UPDATED, TITLE, VERSION
+from .family_access import allows, require, register
 from .engine import (actor_for, add_entry, approve_entry, duplicate, empty_data,
                      find_entry, snapshot, update_entry, validate_photo)
 
@@ -36,6 +37,11 @@ async def async_setup(hass, config):
 
 
 async def async_setup_entry(hass, entry):
+    mapping = entry.options.get('users',entry.data.get('users',{}))
+    def legacy(user):
+        person=next((person for person,uid in mapping.items() if uid==user.id),None)
+        return {'view':bool(person) or user.is_admin,'manage':user.is_admin or person in ('Vera','Manuel'),'settings':user.is_admin or person in ('Vera','Manuel')}
+    await register(hass, DOMAIN, ('view','manage'), legacy, entry=entry, notify=lambda:async_dispatcher_send(hass,SIGNAL_UPDATED))
     manager = Manager(hass, entry)
     await manager.load()
     hass.data[DOMAIN] = manager
@@ -85,7 +91,15 @@ class Manager:
         if not user or not user.is_active:
             raise PermissionError("Keine gültige Anmeldung.")
         mapping = self.entry.options.get("users", self.entry.data["users"])
-        return actor_for(user.id, mapping, user.is_admin)
+        require(self.hass,user,DOMAIN,'view',user.is_admin or user.id in mapping.values())
+        try:
+            actor = actor_for(user.id, mapping, user.is_admin)
+        except PermissionError:
+            if not allows(self.hass,user,DOMAIN,'manage',False):
+                raise
+            actor={'user_id':user.id,'id':user.id,'name':user.name or user.id,'parent':False}
+        actor['parent']=allows(self.hass,user,DOMAIN,'manage',actor['parent'])
+        return actor
 
     def snapshot(self, actor):
         result = snapshot(self.data, actor, self.today())
