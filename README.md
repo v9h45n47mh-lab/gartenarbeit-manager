@@ -21,7 +21,7 @@ title: Gartenarbeit
 
 Die Kartenressource wird automatisch registriert. Falls der Browser die Karte nach der Erstinstallation noch nicht kennt, die HA-App bzw. den Browser einmal vollständig neu laden.
 
-**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.3.1.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
+**Manuell:** Das Release-Archiv `Gartenarbeit_Manager_1.4.0.zip` entpacken und `custom_components/gartenarbeit_manager` nach `/config/custom_components/gartenarbeit_manager` kopieren. Danach mit Schritt 3 fortfahren. Mindestens Home Assistant 2026.3 erforderlich.
 
 ## Kontoregeln
 
@@ -104,9 +104,9 @@ Die **Logik** wird übernommen. Vorhandene Site-Buchungen und Fotos werden nicht
 
 ## Gemeinsamer HA UI Kit
 
-Gartenarbeit Manager 1.3.1 bindet [HA UI Kit 1.3.1](https://github.com/v9h45n47mh-lab/ha-ui-kit/tree/d2d7612da5624da62b641e8fb88970c4468da17a) fest unter `frontend/family-ui/1.3.1/` ein. Die Lock-Datei enthält die Prüfsummen; JavaScript, CSS, Manifest und Lizenz werden mit jeder Installation ausgeliefert. Die HA-Route liefert den gesamten Frontendordner für die relativen Modulimporte aus. Es gibt keinen automatischen Bezug von main/latest und keinen externen Laufzeitaufruf.
+Gartenarbeit Manager 1.4.0 bindet [HA UI Kit 1.4.0](https://github.com/v9h45n47mh-lab/ha-ui-kit/tree/d2d7612da5624da62b641e8fb88970c4468da17a) fest unter `frontend/family-ui/1.3.1/` ein. Die Lock-Datei enthält die Prüfsummen; JavaScript, CSS, Manifest und Lizenz werden mit jeder Installation ausgeliefert. Die HA-Route liefert den gesamten Frontendordner für die relativen Modulimporte aus. Es gibt keinen automatischen Bezug von main/latest und keinen externen Laufzeitaufruf.
 
-Unter dem Zahnrad zeigt die Versionszeile Oberfläche, Integration und UI-Version. Nach dem Update HA neu starten und die Oberfläche vollständig neu laden: Erwartet werden **Oberfläche 1.3.1**, **Integration 1.3.1** und **UI 1.3.1**. Alle Gestaltungsregeln kommen unverändert aus dem Kit; es gibt keine lokalen CSS-Überschreibungen. Die technische Zuordnung und der direkte Stilvergleich stehen in [UI_KIT.md](UI_KIT.md).
+Unter dem Zahnrad zeigt die Versionszeile Oberfläche, Integration und UI-Version. Nach dem Update HA neu starten und die Oberfläche vollständig neu laden: Erwartet werden **Oberfläche 1.4.0**, **Integration 1.4.0** und **UI 1.4.0**. Alle Gestaltungsregeln kommen unverändert aus dem Kit; es gibt keine lokalen CSS-Überschreibungen. Die technische Zuordnung und der direkte Stilvergleich stehen in [UI_KIT.md](UI_KIT.md).
 
 ## Marketplace-Logo
 
@@ -133,3 +133,14 @@ MIT-Lizenz.
 Die Kontokacheln stehen immer zu zweit nebeneinander und sind quadratisch. Name oben links, aktueller Stand groß in der Mitte. Ein einzelnes eigenes Konto bleibt halbbreit. Ausstehende Minuten erscheinen als Hinweis; die vollständige Kontozusammensetzung ist als Tooltip und zugängliche Beschreibung enthalten.
 
 „Buchungen“ unter der Trennlinie ist zunächst zugeklappt. Nach dem Aufklappen werden die zehn neuesten Buchungen angezeigt, die zu den gewählten Filtern passen, sortiert nach Erfassungszeit. Ältere Buchungen werden dadurch nicht gelöscht. „Freigaben“ enthält unabhängig davon alle noch offenen Meldungen.
+
+
+## Zentrale Rollenrechte
+
+Rollenrechte: eigenes Zeitkonto/Buchungen und Verwaltung aller Konten/Freigaben. Familienmitglied-Zuordnungen und Buchungseigentum bleiben erhalten. Neue Rollenrechte greifen auch nach einem Rechteentzug.
+
+Berechtigungen werden jetzt in **Family Access → Anwendung → Rolle** verwaltet. Benutzer können mehrere Rollen erhalten; ihre Freigaben ergänzen sich. Vorhandene Anwendungsrechte werden einmalig in Rollen mit dem Zusatz „übernommen“ importiert und den bisherigen Benutzern zugeordnet. Dashboardfreigaben und die Aktivierung der Dashboardnavigation werden dadurch nicht verändert.
+
+Zum Entziehen eines Rechts alle zugewiesenen Rollen einschließlich übernommener Rollen prüfen. Neue Benutzer erhalten nach der Übernahme keine automatischen Anwendungsrechte. Echte HA-Administratoren behalten Vollzugriff zur Wiederherstellung. Geräte-, Eigentümer- und externe Kontoberechtigungen gelten zusätzlich; eine Rolle erzeugt keine HA-Administratorrechte.
+
+**Aktualisierung:** zuerst Family Access Manager 1.1.0 oder neuer, danach die beteiligten Anwendungen aktualisieren und Home Assistant neu starten. Solange Family Access nicht eingerichtet ist, bleibt die bisherige Rechtevergabe erhalten. Ist Family Access eingerichtet, aber nicht verfügbar oder zu alt, werden Anwendungsaktionen für normale Benutzer abgelehnt. Lokale Benutzer-/Personen-, Geräte- und Musikkontozuordnungen bleiben für Identität und Eigentum erhalten; Rechte werden zentral vergeben.

@@ -24,6 +24,7 @@ module('homeassistant.components.http',StaticPathConfig=lambda *a:a)
 module('homeassistant.auth')
 module('homeassistant.auth.permissions')
 module('homeassistant.auth.permissions.const',POLICY_CONTROL='control',POLICY_READ='read')
+module('homeassistant.core',callback=lambda f:f)
 module('homeassistant.const',Platform=SimpleNamespace(SENSOR='sensor'),UnitOfTime=SimpleNamespace(MINUTES='min'))
 module('homeassistant.helpers')
 def dispatcher_send(hass,signal):
@@ -57,6 +58,17 @@ VERA=gm.actor_for('v',MAPPING);PAUL=gm.actor_for('p',MAPPING);MAX=gm.actor_for('
 PHOTO='data:image/png;base64,'+base64.b64encode(b'\x89PNG\r\n\x1a\n'+b'0'*100).decode()
 def payload(kind='assigned',**kw):return {'request_id':str(uuid4()),'kind':kind,'child':'Paul','minutes':15,'date':'2026-11-10','reason':'Gartenarbeit',**kw}
 class AdapterTests(unittest.IsolatedAsyncioTestCase):
+    async def test_central_role_grant_and_revocation_replace_parent_name_rules(self):
+        grants={'view':True,'manage':False}
+        self.hass.data['family_access_manager']=SimpleNamespace(application_protocol=1,application_permissions=lambda u,a:dict(grants))
+        user=SimpleNamespace(id='v',is_admin=False,is_active=True)
+        self.assertFalse(self.manager.actor(user)['parent'])
+        grants['manage']=True
+        self.assertTrue(self.manager.actor(user)['parent'])
+        grants.clear()
+        with self.assertRaises(PermissionError):self.manager.actor(user)
+        self.assertFalse(user.is_admin)
+
     async def asyncSetUp(self):
         Store.records={};self.hass=SimpleNamespace(data={})
         self.manager=gm.Manager(self.hass,SimpleNamespace(data={'users':MAPPING},options={}))

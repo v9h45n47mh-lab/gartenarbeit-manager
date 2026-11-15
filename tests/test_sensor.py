@@ -72,6 +72,7 @@ class AccountSensorTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_platform_is_forwarded_on_setup(self):
         self.hass.config_entries=SimpleNamespace(async_forward_entry_setups=AsyncMock())
+        self.hass.bus=SimpleNamespace(async_listen=lambda *a:lambda:None,async_fire=lambda *a:None)
         self.entry.add_update_listener=lambda listener:lambda:None
         self.entry.async_on_unload=lambda cancel:None
         self.assertTrue(await gm.async_setup_entry(self.hass,self.entry))

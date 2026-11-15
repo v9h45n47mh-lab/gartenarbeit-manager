@@ -47,7 +47,7 @@ def actor_for(user_id, mapping, is_admin=False):
 
 def require_parent(actor):
     if not actor["parent"]:
-        raise PermissionError("Nur Vera und Manuel dürfen Zuweisungen, Korrekturen und Freigaben verwalten.")
+        raise PermissionError("Deine Rolle darf Zuweisungen, Korrekturen und Freigaben nicht verwalten.")
 
 
 def visible(actor, row):
